@@ -445,59 +445,64 @@ Designed for Linux devices, including Arch and Debian/Ubuntu-based systems.
 AI responses are streamed in real-time. The assistant message appears gradually as it is being generated instead of waiting for the full response.
 
 36. Advanced PDF processing pipeline  
-pdf_text → extract text from the PDF → AI generates DOCX → app converts DOCX back to PDF  
+      pdf_text → extract text from the PDF
+                → AI generates DOCX
+                → app converts DOCX back to PDF  
 
-      pdf_image → if PDF Image mode is selected, convert PDF pages to PNG → AI analyzes the image or returns a PNG  
+      pdf_image → if PDF Image mode is selected, convert PDF pages to PNG
+               → AI analyzes the image or returns a PNG  
                → if a PNG is returned, the app converts it into a PDF  
 
-      pdf_image + mixed/image block → extract image blocks from the PDF → AI returns edited PNG  
-                               → app places the new image back into the original PDF at the same position  
+      pdf_image + mixed/image block
+                → extract image blocks from the PDF
+                → AI returns edited PNG
+                → app places the new image back into the original PDF at the same position  
 
-      pdf_text_image → extract layout as JSON + extract images as PNG  
-                    → AI returns text_replacements JSON (and optionally images)  
-                    → app rebuilds the PDF using the original layout with updated text and images
+      pdf_text_image → extract layout as JSON + extract images as PNG
+                → AI returns text_replacements JSON (and optionally images)
+                → app rebuilds the PDF using the original layout with updated text and images
 
-37. Generated files system  
+38. Generated files system  
 AI can return generated files (PDF, DOCX, XLSX, etc.), which are automatically saved in the app cache and displayed in chat with download buttons.
 
-38. Structured file generation protocol  
+39. Structured file generation protocol  
 AI responses can include structured file_create blocks, allowing the app to generate real files programmatically without manual parsing.
 
-39. Editable file safety system  
+40. Editable file safety system  
 Files can be marked as editable or read-only. AI is strictly prevented from modifying files unless explicit permission is enabled.
 
-40. Smart PDF type detection  
+41. Smart PDF type detection  
 Automatically detects whether a PDF is text-based, image-based, or mixed, and applies the appropriate processing pipeline.
 
-41. Mixed PDF layout reconstruction  
+42. Mixed PDF layout reconstruction  
 For PDFs containing both text and images, the app extracts layout structure and rebuilds the document after AI modifications.
 
-42. Image-to-PDF auto conversion  
+43. Image-to-PDF auto conversion  
 If the AI returns image outputs (e.g., PNG), the app automatically converts them into PDF format when needed.
 
-43. Generated image caching  
+44. Generated image caching  
 All generated images are cached locally and can be reused without re-generation.
 
-44. AI-returned file handling  
+45. AI-returned file handling  
 Supports file outputs returned as base64 or URLs and converts them into downloadable files automatically.
 
-45. Modular prompt system  
+46. Modular prompt system  
 System prompts are divided into selectable blocks, allowing dynamic control over AI behavior without modifying core logic.
 
-46. Local provider startup automation  
+47. Local provider startup automation  
 Local AI providers can be automatically started or stopped using configured commands.
 
-47. Chat-aware context building  
+48. Chat-aware context building  
 The system intelligently builds context using recent messages, summaries, code context, and relevant memory chunks.
 
-48. Real-time independent multi-chat streaming  
+49. Real-time independent multi-chat streaming  
 Multiple chats can send AI requests simultaneously. Each chat processes, streams, and updates responses independently in real time.
 
-49. Integrated web search  
+50. Integrated web search  
 Supports AI-powered web search and current online information retrieval using Tavily.  
 User -> AI -> if required(User Permission) -> Tavily -> AI -> User
 
-50. CLI dynamic yes/no input  
+51. CLI dynamic yes/no input  
 CLI prompts accept y, yes, n, no, the localized o_Yes / o_No values, and their first letters.
 </details>
 
