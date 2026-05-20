@@ -445,22 +445,25 @@ Designed for Linux devices, including Arch and Debian/Ubuntu-based systems.
 AI responses are streamed in real-time. The assistant message appears gradually as it is being generated instead of waiting for the full response.
 
 36. Advanced PDF processing pipeline  
-      pdf_text → extract text from the PDF  
-                → AI generates DOCX  
-                → app converts DOCX back to PDF  
+      pdf_text  
+            → extract text from the PDF  
+            → AI generates DOCX  
+            → app converts DOCX back to PDF  
 
-      pdf_image → if PDF Image mode is selected, convert PDF pages to PNG  
-               → AI analyzes the image or returns a PNG  
-               → if a PNG is returned, the app converts it into a PDF  
+      pdf_image
+            → if PDF Image mode is selected, convert PDF pages to PNG  
+            → AI analyzes the image or returns a PNG  
+            → if a PNG is returned, the app converts it into a PDF  
 
       pdf_image + mixed/image block  
-                → extract image blocks from the PDF  
-                → AI returns edited PNG  
-                → app places the new image back into the original PDF at the same position  
+            → extract image blocks from the PDF  
+            → AI returns edited PNG  
+            → app places the new image back into the original PDF at the same position  
 
-      pdf_text_image → extract layout as JSON + extract images as PNG  
-                → AI returns text_replacements JSON (and optionally images)  
-                → app rebuilds the PDF using the original layout with updated text and images  
+      pdf_text_image  
+            → extract layout as JSON + extract images as PNG  
+            → AI returns text_replacements JSON (and optionally images)  
+            → app rebuilds the PDF using the original layout with updated text and images  
 
 38. Generated files system  
 AI can return generated files (PDF, DOCX, XLSX, etc.), which are automatically saved in the app cache and displayed in chat with download buttons.
@@ -616,59 +619,67 @@ Arch ve Debian/Ubuntu dahil Linux sistemler için tasarlanmıştır.
 AI yanıtları gerçek zamanlı olarak akış halinde gösterilir. Asistan mesajı, tamamının oluşmasını beklemek yerine yazılırken kademeli olarak ekranda görünür.
 
 36. Gelişmiş PDF işleme pipeline’ı  
-pdf_text → PDF’ten metin çıkarılır → AI DOCX üretir → uygulama DOCX’i tekrar PDF’e çevirir
+      pdf_text  
+            → PDF’ten metin çıkarılır  
+            → AI DOCX üretir  
+            → uygulama DOCX’i tekrar PDF’e çevirir  
 
-      pdf_image → PDF Image modu seçiliyse sayfalar PNG’ye çevrilir → AI görseli analiz eder veya PNG döndürür
-      → PNG dönerse uygulama bunu PDF’e çevirir
+      pdf_image  
+            → PDF Image modu seçiliyse sayfalar PNG’ye çevrilir  
+            → AI görseli analiz eder veya PNG döndürür  
+            → PNG dönerse uygulama bunu PDF’e çevirir  
 
-      pdf_image + mixed/image block → PDF’ten görsel bloklar çıkarılır → AI düzenlenmiş PNG döndürür
-      → uygulama yeni görseli PDF içinde aynı konuma yerleştirir
+      pdf_image + mixed/image block  
+            → PDF’ten görsel bloklar çıkarılır  
+            → AI düzenlenmiş PNG döndürür  
+            → uygulama yeni görseli PDF içinde aynı konuma yerleştirir  
 
-      pdf_text_image → layout JSON olarak çıkarılır + görseller PNG olarak alınır
-      → AI text_replacements JSON (ve opsiyonel görseller) döndürür
-      → uygulama orijinal layout’u kullanarak PDF’i yeniden oluşturur
+      pdf_text_image  
+            → layout JSON olarak çıkarılır + görseller PNG olarak alınır  
+            → AI text_replacements JSON (ve opsiyonel görseller) döndürür  
+            → uygulama orijinal layout’u kullanarak PDF’i yeniden oluşturur  
 
-37. Üretilen dosya sistemi  
+38. Üretilen dosya sistemi  
 AI tarafından oluşturulan dosyalar (PDF, DOCX, XLSX vb.) otomatik olarak uygulama cache dizinine kaydedilir ve sohbet içinde indirme butonlarıyla gösterilir.
 
-38. Yapılandırılmış dosya üretim protokolü  
+39. Yapılandırılmış dosya üretim protokolü  
 AI yanıtları, manuel parse gerektirmeden doğrudan dosya üretimini sağlayan yapılandırılmış file_create blokları içerebilir.
 
-39. Düzenlenebilir dosya güvenlik sistemi  
+40. Düzenlenebilir dosya güvenlik sistemi  
 Dosyalar düzenlenebilir veya salt okunur olarak işaretlenebilir. Açık izin verilmeden AI’ın dosyaları değiştirmesi kesin olarak engellenir.
 
-40. Akıllı PDF türü tespiti  
+41. Akıllı PDF türü tespiti  
 PDF’in metin tabanlı, görsel tabanlı veya karışık olup olmadığı otomatik olarak tespit edilir ve uygun işleme pipeline’ı uygulanır.
 
-41. Karışık PDF layout yeniden oluşturma  
+42. Karışık PDF layout yeniden oluşturma  
 Hem metin hem görsel içeren PDF’lerde, layout yapısı çıkarılır ve AI düzenlemelerinden sonra belge yeniden oluşturulur.
 
-42. Görselden PDF’e otomatik dönüşüm  
+43. Görselden PDF’e otomatik dönüşüm  
 AI görsel (örneğin PNG) çıktısı verdiğinde, uygulama bunu otomatik olarak PDF formatına dönüştürür.
 
-43. Üretilen görsel cache sistemi  
+44. Üretilen görsel cache sistemi  
 Oluşturulan tüm görseller yerel olarak cache’lenir ve tekrar üretmeye gerek kalmadan yeniden kullanılabilir.
 
-44. AI tarafından dönen dosya işleme sistemi  
+45. AI tarafından dönen dosya işleme sistemi  
 Base64 veya URL olarak dönen dosyalar desteklenir ve otomatik olarak indirilebilir dosyalara dönüştürülür.
 
-45. Modüler prompt sistemi  
+46. Modüler prompt sistemi  
 Sistem prompt’ları bloklara ayrılmıştır ve dinamik olarak açılıp kapatılarak AI davranışı kontrol edilebilir.
 
-46. Local provider başlatma otomasyonu  
+47. Local provider başlatma otomasyonu  
 Yerel AI sağlayıcıları, tanımlı komutlar ile otomatik olarak başlatılabilir veya durdurulabilir.
 
-47. Sohbet farkındalıklı context oluşturma  
+48. Sohbet farkındalıklı context oluşturma  
 Sistem; son mesajlar, özetler, kod context’i ve ilgili hafıza parçalarını kullanarak akıllı bir context oluşturur.
 
-48. Gerçek zamanlı bağımsız çoklu sohbet akışı  
+49. Gerçek zamanlı bağımsız çoklu sohbet akışı  
 Birden fazla sohbet aynı anda AI isteği gönderebilir. Her sohbet, diğer sohbetleri engellemeden gerçek zamanlı olarak bağımsız şekilde işlenir, yayınlanır ve güncellenir.
 
-49. Entegre web arama  
+50. Entegre web arama  
 Tavily kullanarak AI destekli web araması ve güncel çevrimiçi bilgi erişimi sağlar.  
 Kullanıcı -> AI -> eğer gerekliyse(Kullanıcı İzni) -> Tavily -> AI -> Kullanıcı
 
-50. CLI dinamik evet/hayır girişi  
+51. CLI dinamik evet/hayır girişi  
 CLI istemleri y, yes, n, no, yerelleştirilmiş o_Yes / o_No değerlerini ve bunların ilk harflerini kabul eder.
 </details>
 
