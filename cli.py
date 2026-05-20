@@ -106,6 +106,27 @@ class ChatCLI:
 
         return s == "\x1b" or s.strip().lower() in {"esc", ":q"}
 
+    def yes_no_prompt(self, label: str) -> bool:
+        yes = str(self("o_Yes") or "yes").strip().lower()
+        no = str(self("o_No") or "no").strip().lower()
+
+        valid_yes = {"y", "yes"}
+        valid_no = {"n", "no"}
+
+        if yes:
+            valid_yes.add(yes)
+            valid_yes.add(yes[0])
+
+        if no:
+            valid_no.add(no)
+            valid_no.add(no[0])
+
+        ans = self._read_input(
+            f"{label} ({self('o_Yes')}/{self('o_No')}): "
+        ).strip().lower()
+
+        return ans in valid_yes
+
     # ---------------- CONFIG ----------------
 
     def load_config(self):
@@ -995,13 +1016,18 @@ class ChatCLI:
             providers = cfg.get("local_providers", {})
             pcfg = providers.get(provider_name, {})
 
-            print(f"\n={self('o_AI_Provider')}: {provider_name}=")
+            print(f"\n={self('o_AI_Providers')}: {provider_name}=")
 
             for i, key in enumerate(keys, 1):
                 print(f"{i}) {key}: {pcfg.get(key, '')}")
 
-            print(f"{len(keys) + 1}) {self('o_Delete_Provider')}")
-            print(f"{len(keys) + 2}) {self('o_Go_Back')}")
+            stop_num = len(keys) + 1
+            delete_num = len(keys) + 2
+            back_num = len(keys) + 3
+
+            print(f"{stop_num}) {self('o_Stop_Provider')}")
+            print(f"{delete_num}) {self('o_Delete_Provider')}")
+            print(f"{back_num}) {self('o_Go_Back')}")
 
             choice = self._read_input(f"\n{self('o_Selection')}: ").strip()
 
@@ -1010,19 +1036,54 @@ class ChatCLI:
 
             num = int(choice)
 
-            if num == len(keys) + 2:
+            if num == back_num:
                 return
 
-            if num == len(keys) + 1:
-                confirm = self._read_input(f"{self('o_Delete')}? ({self('o_Yes')}/{self('o_No')}): ").strip().lower()
-                if confirm in ("e", "evet", "y", "yes"):
+            if num == stop_num:
+                cmd = str(pcfg.get("stop_command") or "").strip()
+
+                if not cmd:
+                    print(self("o_Provider_Command_No_Command", provider=provider_name))
+                    self._read_input(f"\n{self('o_to_Menu')}")
+                    continue
+
+                try:
+                    p = subprocess.run(
+                        cmd,
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+
+                    if p.returncode == 0:
+                        print(self("o_Provider_Command_Success", provider=provider_name, command=cmd))
+                    else:
+                        print(self("o_Provider_Command_Failed", provider=provider_name, command=cmd, code=p.returncode))
+
+                    self._read_input(f"\n{self('o_to_Menu')}")
+
+                except subprocess.TimeoutExpired:
+                    print(self("o_Provider_Command_Timeout", provider=provider_name, command=cmd))
+                    self._read_input(f"\n{self('o_to_Menu')}")
+
+                except Exception as e:
+                    print(self("o_Provider_Command_Error", provider=provider_name, error=e))
+                    self._read_input(f"\n{self('o_to_Menu')}")
+
+                continue
+
+            if num == delete_num:
+                if self.yes_no_prompt(f"{self('o_Delete_Provider')}?"):
                     providers.pop(provider_name, None)
                     cfg["local_providers"] = providers
                     self.save_config(cfg)
                     return
+
                 continue
 
             idx = num - 1
+
             if not (0 <= idx < len(keys)):
                 continue
 
@@ -1256,6 +1317,27 @@ class ChatCLI:
 
         return None, None, None
 
+    def apply_op_summary_line_cli(self, op: dict) -> str:
+        mode = str(op.get("mode") or "").strip().lower()
+        find = str(op.get("find") or "").strip()
+        text = str(op.get("text") or "").strip()
+
+        if len(find) > 80:
+            find = find[:80] + "..."
+
+        if len(text) > 80:
+            text = text[:80] + "..."
+
+        if mode == "before":
+            mode_text = self("o_Apply_Mode_before")
+        elif mode == "after":
+            mode_text = self("o_Apply_Mode_after")
+        elif mode == "replace":
+            mode_text = self("o_Apply_Mode_replace")
+        else:
+            mode_text = mode or "-"
+
+        return f"{mode_text}: {find}  ->  {text}"
 
     def handle_pending_apply_requests(self) -> bool:
         msg_index, msg, ops = self.find_pending_apply_request()
@@ -1288,12 +1370,18 @@ class ChatCLI:
         except Exception:
             pass
 
+        print()
+        for op in ops:
+            print(self.apply_op_summary_line_cli(op))
+
+        print()
+        print(f"{self('o_Files')}:")
         for p in paths:
             print(f"- {p}")
 
         print()
         print(f"1) {self('o_Apply')}")
-        print(f"2) {self('o_Cancel')}")
+        print(f"2) {self('o_Reject')}")
 
         choice = self._read_input(f"\n{self('o_Selection')}: ").strip()
 
@@ -1312,7 +1400,7 @@ class ChatCLI:
 
         elif choice == "2":
             self.set_apply_status_cli(msg_index, "cancel")
-            print(f"\n⏭️ {self('o_Cancelled')}")
+            print(f"\n⏭️ {self('o_Reject')}")
             self._read_input(f"\n{self('o_to_Menu')}")
             return True
 
@@ -1857,11 +1945,8 @@ class ChatCLI:
                 ext = p.suffix.lower()
 
                 if ext in (".docx", ".pdf", ".xlsx", ".txt", ".md"):
-                    ans = self._read_input(
-                        f"{self('o_Edit_Mode')} ({self('o_Yes')}/{self('o_No')}): "
-                    ).strip().lower()
+                    edit_default = self.yes_no_prompt(self("o_Edit_Mode"))
 
-                    edit_default = ans in ("e", "evet", "y", "yes")
                 self.pending_files.append({
                     "path": str(p),
                     "name": p.name,
@@ -2562,9 +2647,7 @@ class ChatCLI:
         print(text)
         print("---")
 
-        ans = self._read_input(f"\n{self('o_Send_Message')}? (y/n): ").strip().lower()
-
-        if ans not in ("e", "evet", "y", "yes"):
+        if not self.yes_no_prompt(f"\n{self('o_Send_Message')}?"):
             return
 
         self.append_user_message(text)
@@ -2719,6 +2802,20 @@ class ChatCLI:
 
         messages = self.load_chat_messages()
 
+        bot_idx = None
+        for i in range(len(messages) - 1, -1, -1):
+            msg = messages[i]
+
+            if not isinstance(msg, dict):
+                continue
+
+            if msg.get("role") in ("bot", "assistant") and msg.get("streaming"):
+                bot_idx = i
+                break
+
+            if msg.get("role") == "user":
+                break
+
         bot_msg = {
             "role": "bot",
             "content": str(data.get("content") or "").strip()
@@ -2846,7 +2943,12 @@ class ChatCLI:
             if clean_files:
                 bot_msg["generated_files"] = clean_files
 
-        messages.append(bot_msg)
+        if bot_idx is not None:
+            bot_msg.pop("streaming", None)
+            messages[bot_idx] = bot_msg
+        else:
+            messages.append(bot_msg)
+
         self.save_chat_messages(messages)
         return bot_msg
 
@@ -2885,6 +2987,52 @@ class ChatCLI:
         except Exception:
             return False
 
+    def begin_cli_ai_stream_placeholder(self):
+        data = self.load_chat_data_cli()
+        messages = data.get("messages", [])
+
+        # Zaten son tarafta streaming bot varsa yenisini açma
+        for msg in reversed(messages):
+            if not isinstance(msg, dict):
+                continue
+
+            if msg.get("role") in ("bot", "assistant") and msg.get("streaming"):
+                self.save_chat_data_cli(data)
+                return
+
+            if msg.get("role") == "user":
+                break
+
+        messages.append({
+            "role": "bot",
+            "content": "",
+            "streaming": True
+        })
+
+        data["messages"] = messages
+        self.save_chat_data_cli(data)
+
+
+    def remove_cli_ai_stream_placeholder(self):
+        data = self.load_chat_data_cli()
+        messages = data.get("messages", [])
+
+        for i in range(len(messages) - 1, -1, -1):
+            msg = messages[i]
+
+            if not isinstance(msg, dict):
+                continue
+
+            if msg.get("role") in ("bot", "assistant") and msg.get("streaming"):
+                messages.pop(i)
+                break
+
+            if msg.get("role") == "user":
+                break
+
+        data["messages"] = messages
+        self.save_chat_data_cli(data)
+
     def call_ai(self):
         selected_arg = ""
 
@@ -2913,6 +3061,8 @@ class ChatCLI:
             context_mode,
         ]
 
+        self.begin_cli_ai_stream_placeholder()
+
         try:
             env = os.environ.copy()
             env["PYTHONUTF8"] = "1"
@@ -2938,6 +3088,7 @@ class ChatCLI:
             partial = ""
             stderr_chunks = []
             json_mode = False
+            apply_mode = False
 
             out_fd = proc.stdout.fileno()
             err_fd = proc.stderr.fileno()
@@ -2999,8 +3150,13 @@ class ChatCLI:
                             if stripped.startswith("{") or stripped.startswith("["):
                                 json_mode = True
                             else:
-                                with stream_lock:
-                                    stream_buffer.append(text)
+                                # apply bloğu başladıysa terminale basma
+                                if re.search(r"(?m)^\s*apply\s*$", partial):
+                                    apply_mode = True
+
+                                if not apply_mode:
+                                    with stream_lock:
+                                        stream_buffer.append(text)
 
                     else:
                         break
@@ -3026,7 +3182,7 @@ class ChatCLI:
             if tail:
                 partial += tail
 
-                if not json_mode:
+                if not json_mode and not apply_mode:
                     with stream_lock:
                         stream_buffer.append(tail)
 
@@ -3084,6 +3240,8 @@ class ChatCLI:
             return None
 
     def handle_ai_error(self, error_text):
+        self.remove_cli_ai_stream_placeholder()
+
         messages = self.load_chat_messages()
 
         messages.append({
@@ -3127,7 +3285,16 @@ class ChatCLI:
                 params = {}
             return self(str(msg.get("i18n_key")), **params)
 
-        return str(msg.get("content") or "")
+        text = str(msg.get("content") or "")
+
+        # apply bloğu mesaj içinde kalsın ama history/chat görünümünde gösterilmesin
+        text = re.sub(
+            r"(?ms)\n?\s*apply\s*\n.*?\n\s*apply\s*$",
+            "",
+            text
+        ).strip()
+
+        return text
 
 
     def extract_links_from_text(self, text: str) -> list[str]:
@@ -3651,7 +3818,20 @@ class ChatCLI:
             self.clear_screen()
             print(f"{self('o_AI_Response')}\n")
 
-            self.call_ai()            
+            bot_msg = self.call_ai()
+
+            # AI hata verdiyse apply/web aramaya çalışma
+            if not bot_msg:
+                self._read_input(f"\n{self('o_to_Menu')}")
+                return True
+
+            # Regen sonrası web search isteği oluştuysa hemen göster
+            if self.handle_pending_web_search_requests():
+                return True
+
+            # Regen sonrası apply isteği oluştuysa hemen göster
+            if self.handle_pending_apply_requests():
+                return True
 
             self._read_input(f"\n{self('o_to_Menu')}")
             return True
@@ -3816,6 +3996,12 @@ class ChatCLI:
         show_usage = bool(cfg.get("show_usage", False))
 
         text = str(bot_msg.get("content") or "").strip()
+        text = re.sub(
+            r"(?ms)\n?\s*apply\s*\n.*?\n\s*apply\s*$",
+            "",
+            text
+        ).strip()
+
         if text:
             print(f"\n{self('o_Assistant')}:")
             print(text)
@@ -4009,10 +4195,8 @@ class ChatCLI:
                 if not (0 <= idx < len(chats)):
                     continue
 
-                print(f'{self("o_Delete")}("{chats[idx].stem}")? (e/h): ')
-                confirm = input(f'({self("o_Delete_Chat_Confirm")})').strip().lower()
-
-                if confirm == "e":
+                print(f'{self("o_Delete_Chat_Confirm")}')
+                if self.yes_no_prompt(f'{self("o_Delete")} "{chats[idx].stem}"?'):
                     self.delete_chat(chats[idx])
                     self._read_input(f"\n{self('o_to_Menu')}")
 
@@ -4105,11 +4289,7 @@ class ChatCLI:
                 if not model_id:
                     continue
 
-                is_local_raw = self._read_input(
-                    f"{self('o_Local_Model')}? ({self('o_Yes')}/{self('o_No')}): "
-                ).strip().lower()
-
-                is_local = is_local_raw in ("e", "evet", "y", "yes", "1", "true", "on")
+                is_local = self.yes_no_prompt(f"{self('o_Local_Model')}?")
 
                 self.set_chat_model(self.current_chat, model_id, is_local)
 
@@ -4151,11 +4331,7 @@ class ChatCLI:
                 if not model_id:
                     continue
 
-                confirm = self._read_input(
-                    f'{self("o_Delete")}("{model_id}")? ({self("o_Yes")}/{self("o_No")}): '
-                ).strip().lower()
-
-                if confirm not in ("e", "evet", "y", "yes"):
+                if not self.yes_no_prompt(f'{self("o_Delete")} "{model_id}"?'):
                     continue
 
                 models2 = [
