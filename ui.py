@@ -7,6 +7,8 @@ import json
 import subprocess
 import threading
 import codecs
+import time
+import select
 from pathlib import Path
 import base64
 import tempfile
@@ -90,6 +92,10 @@ def ensure_base_config(config: dict) -> dict:
         "stt_model_online": "openai/gpt-audio-mini",
         "whisper_cpp_bin": "",
         "whisper_cpp_model": "",
+        "use_stt_timeout": False,
+        "stt_timeout": "10",
+        "use_stt_silence": False,
+        "stt_silence_duration": "2",
         "pinned_chats": [],
         "custom_colors_dark": dict(DEFAULT_CUSTOM_COLORS_DARK),
         "custom_colors_light": dict(DEFAULT_CUSTOM_COLORS_LIGHT),
@@ -147,6 +153,8 @@ def ensure_base_config(config: dict) -> dict:
         "force_ui_language",
         "is_mic_online",
         "use_desktop_voice",
+        "use_stt_timeout",
+        "use_stt_silence",
     ]
 
     changed = False
@@ -4109,6 +4117,44 @@ class ChatApp(Gtk.Application):
         row_desktop.append(desktop_switch)
         content.append(row_desktop)
 
+        # --- Timeout ---
+        timeout_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        timeout_switch = Gtk.Switch()
+        timeout_switch.set_active(bool(cfg.get("use_stt_timeout", False)))
+
+        timeout_label = Gtk.Label(label=self("o_Use_Timeout"))
+        timeout_label.set_xalign(0)
+        timeout_label.set_hexpand(True)
+
+        timeout_entry = Gtk.Entry()
+        timeout_entry.set_text(str(cfg.get("stt_timeout", "10")))
+        timeout_entry.set_width_chars(6)
+
+        timeout_row.append(timeout_label)
+        timeout_row.append(timeout_switch)
+        timeout_row.append(timeout_entry)
+        content.append(timeout_row)
+
+        # --- Silence ---
+        silence_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        silence_switch = Gtk.Switch()
+        silence_switch.set_active(bool(cfg.get("use_stt_silence", True)))
+
+        silence_label = Gtk.Label(label=self("o_Use_Silence_Auto_Stop"))
+        silence_label.set_xalign(0)
+        silence_label.set_hexpand(True)
+
+        silence_entry = Gtk.Entry()
+        silence_entry.set_text(str(cfg.get("stt_silence_duration", "2")))
+        silence_entry.set_width_chars(6)
+
+        silence_row.append(silence_label)
+        silence_row.append(silence_switch)
+        silence_row.append(silence_entry)
+        content.append(silence_row)
+
         # --- Online model ---
         stt_model_label = Gtk.Label()
         self.bind_i18n(stt_model_label, "label", "o_Online_STT_Model")
@@ -4165,7 +4211,14 @@ class ChatApp(Gtk.Application):
             whisper_model_label.set_sensitive(not is_online)
             whisper_model_entry.set_sensitive(not is_online)
 
+            timeout_entry.set_sensitive(bool(timeout_switch.get_active()))
+            silence_entry.set_sensitive(bool(silence_switch.get_active()))
+
+
         online_switch.connect("notify::active", refresh_sensitive_state)
+        timeout_switch.connect("notify::active", refresh_sensitive_state)
+        silence_switch.connect("notify::active", refresh_sensitive_state)
+
         refresh_sensitive_state()
 
         def on_response(d, resp):
@@ -4177,6 +4230,10 @@ class ChatApp(Gtk.Application):
                 cfg2["stt_model_online"] = stt_model_entry.get_text().strip()
                 cfg2["whisper_cpp_bin"] = whisper_bin_entry.get_text().strip()
                 cfg2["whisper_cpp_model"] = whisper_model_entry.get_text().strip()
+                cfg2["use_stt_timeout"] = bool(timeout_switch.get_active())
+                cfg2["stt_timeout"] = timeout_entry.get_text().strip() or "10"
+                cfg2["use_stt_silence"] = bool(silence_switch.get_active())
+                cfg2["stt_silence_duration"] = silence_entry.get_text().strip() or "2"
 
                 self.save_config(cfg2)
 
@@ -7291,35 +7348,102 @@ class ChatApp(Gtk.Application):
 
         return None
 
+    def _reset_mic_button_ui(self):
+        try:
+            self.mic_btn.set_label("🎙️")
+            self.bind_i18n(self.mic_btn, "tooltip", "o_Microphone")
+        except Exception:
+            pass
 
+        self._voice_countdown_active = False
+
+
+    def _stop_voice_recording_and_transcribe(self):
+        proc = getattr(self, "_voice_proc", None)
+
+        if proc and proc.poll() is None:
+            try:
+                proc.send_signal(signal.SIGINT)
+            except Exception:
+                try:
+                    proc.terminate()
+                except Exception:
+                    pass
+
+            try:
+                proc.wait(timeout=3)
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+
+        self._voice_proc = None
+        self._reset_mic_button_ui()
+
+        threading.Thread(
+            target=self._transcribe_last_audio,
+            daemon=True
+        ).start()
+
+        return False
+
+
+    def _update_voice_timeout_tooltip(self):
+        if not getattr(self, "_voice_countdown_active", False):
+            return False
+
+        proc = getattr(self, "_voice_proc", None)
+
+        if not proc or proc.poll() is not None:
+            self._reset_mic_button_ui()
+            return False
+
+        if not getattr(self, "_voice_use_timeout", False):
+            return True
+
+        elapsed = time.time() - float(getattr(self, "_voice_start_time", time.time()))
+        timeout = float(getattr(self, "_voice_timeout_seconds", 10))
+        remaining = int(timeout - elapsed)
+
+        if remaining <= 0:
+            self.mic_btn.set_tooltip_text("Timeout: 0")
+            GLib.idle_add(self._stop_voice_recording_and_transcribe)
+            return False
+
+        self.mic_btn.set_tooltip_text(f"Timeout: {remaining}")
+        return True
+
+
+    def _watch_voice_silence(self):
+        proc = getattr(self, "_voice_proc", None)
+
+        if not proc or not proc.stderr:
+            return
+
+        started = time.time()
+
+        try:
+            while proc.poll() is None:
+                line = proc.stderr.readline()
+
+                if not line:
+                    time.sleep(0.05)
+                    continue
+
+                low = line.decode("utf-8", errors="ignore").lower()
+
+                if "silence_start" in low and (time.time() - started) >= 1.5:
+                    GLib.idle_add(self._stop_voice_recording_and_transcribe)
+                    return
+
+        except Exception:
+            pass
 
     def toggle_voice_input(self, *_):
         # Eğer kayıt açıksa: durdur + transcribe
         if self._voice_proc and self._voice_proc.poll() is None:
-            try:
-                # pw-record için en güvenlisi SIGINT (Ctrl+C gibi)
-                self._voice_proc.send_signal(signal.SIGINT)
-            except Exception:
-                try:
-                    self._voice_proc.terminate()
-                except Exception:
-                    pass
-
-            try:
-                self._voice_proc.wait(timeout=3)
-            except Exception:
-                try:
-                    self._voice_proc.kill()
-                except Exception:
-                    pass
-
-            self._voice_proc = None
-
-            self.mic_btn.set_label("🎙️")
-            self.bind_i18n(self.mic_btn, "tooltip", "o_Microphone")
-
-            # transcribe arka planda
-            threading.Thread(target=self._transcribe_last_audio, daemon=True).start()
+            self._stop_voice_recording_and_transcribe()
             return
 
         # Kayıt başlat
@@ -7331,7 +7455,37 @@ class ChatApp(Gtk.Application):
         ar = shutil.which("arecord")
         use_desktop_voice = self._get_use_desktop_voice()
 
-        if pw:
+        cfg = ensure_base_config(self.load_config())
+
+        use_timeout = bool(cfg.get("use_stt_timeout", False))
+        use_silence = bool(cfg.get("use_stt_silence", False))
+
+        try:
+            timeout_seconds = float(str(cfg.get("stt_timeout", "10")).replace(",", "."))
+        except Exception:
+            timeout_seconds = 10.0
+
+        try:
+            silence_duration = float(str(cfg.get("stt_silence_duration", "2")).replace(",", "."))
+        except Exception:
+            silence_duration = 2.0
+
+        ffmpeg = shutil.which("ffmpeg")
+
+        if use_silence and ffmpeg:
+            cmd = [
+                ffmpeg,
+                "-nostdin",
+                "-y",
+                "-f", "pulse",
+                "-i", "default",
+                "-ac", "1",
+                "-ar", "16000",
+                "-af", f"silencedetect=n=-45dB:d={silence_duration}",
+                str(self._last_wav)
+            ]
+
+        elif pw:
             if use_desktop_voice:
                 target = self._detect_pw_desktop_target()
                 if not target:
@@ -7386,10 +7540,11 @@ class ChatApp(Gtk.Application):
 
         try:
             self._voice_proc = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                    )
+                cmd,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE if (use_silence and ffmpeg) else subprocess.DEVNULL
+            )
         except Exception as e:
             self._voice_proc = None
             self.handle_ai_error({
@@ -7402,91 +7557,111 @@ class ChatApp(Gtk.Application):
             return
 
         self.mic_btn.set_label("⏹")
-        self.bind_i18n(self.mic_btn, "tooltip", "o_Stop_Recording")
+
+        self._voice_start_time = time.time()
+        self._voice_timeout_seconds = timeout_seconds
+        self._voice_use_timeout = use_timeout
+        self._voice_countdown_active = True
+
+        if use_timeout:
+            self.mic_btn.set_tooltip_text(f"Timeout: {int(timeout_seconds)}")
+        else:
+            self.bind_i18n(self.mic_btn, "tooltip", "o_Stop_Recording")
+
+        GLib.timeout_add_seconds(1, self._update_voice_timeout_tooltip)
+
+        if use_silence and ffmpeg:
+            threading.Thread(
+                target=self._watch_voice_silence,
+                daemon=True
+            ).start()
 
     def _normalize_stt_text(self, text: str) -> str:
-        t = (text or "").strip()
+        t = str(text or "").strip()
 
         if not t:
             return "__NO_SPEECH__"
 
-        # Karşılaştırma için normalize et
         normalized = (
-                t.replace("’", "'")
-                .replace("“", '"')
-                .replace("”", '"')
-                .strip()
-                )
+            t.replace("’", "'")
+            .replace("“", '"')
+            .replace("”", '"')
+            .strip()
+        )
 
         low = normalized.lower()
 
-        # Direkt EMPTY_AUDIO veya içinde geçiyorsa
         if "empty_audio" in low:
             return "__NO_SPEECH__"
 
-        # Gürültü / sessizlik / bekleme mesajları
         bad_patterns = [
-                "i', sorry",
-                "i'm here",
-                "i am here",
-                "please upload",
-                "please provide",
-                "provide the audio",
-                "share the audio",
-                "i can transcribe",
-                "i will transcribe",
-                "i'll transcribe",
-                "upload the audio",
-                "audio file",
-                "please provide the audio",
-                "no audio",
-                "cannot transcribe",
-                "can't transcribe",
-                "no speech",
-                "no clear speech",
-                "there's no clear speech detected",
-                "there is no clear speech detected",
-                "silence",
-                "only silence",
-                "noise",
-                "only noise",
-                "background sounds",
-                "music only",
-                "please speak when you're ready",
-                "please speak when you are ready",
-                "i'll transcribe your speech",
-                "i will transcribe your speech",
-                "ready, and i'll transcribe",
-                "ready, and i will transcribe",
-                "microphone input",
-                "sure. please speak",
-                "speak when you're ready",
-                "speak when you are ready",
-                "could you please repeat",
-                "repeat the part of the sentence",
-                "so that i can transcribe it accurately",
-                "something might be unclear or incomplete",
-                "it seems like something might be unclear or incomplete",
-                ]
+            "blank_audio",
+            "blank voice",
+            "blank_voice",
+            "sound_voice",
+            "sound voice",
+            "music_audio",
+            "music voice",
+            "i', sorry",
+            "i'm here",
+            "i am here",
+            "please upload",
+            "please provide",
+            "provide the audio",
+            "share the audio",
+            "i can transcribe",
+            "i will transcribe",
+            "i'll transcribe",
+            "upload the audio",
+            "audio file",
+            "please provide the audio",
+            "no audio",
+            "cannot transcribe",
+            "can't transcribe",
+            "no speech",
+            "no clear speech",
+            "there's no clear speech detected",
+            "there is no clear speech detected",
+            "silence",
+            "only silence",
+            "noise",
+            "only noise",
+            "background sounds",
+            "music only",
+            "please speak when you're ready",
+            "please speak when you are ready",
+            "i'll transcribe your speech",
+            "i will transcribe your speech",
+            "ready, and i'll transcribe",
+            "ready, and i will transcribe",
+            "microphone input",
+            "sure. please speak",
+            "speak when you're ready",
+            "speak when you are ready",
+            "could you please repeat",
+            "repeat the part of the sentence",
+            "so that i can transcribe it accurately",
+            "something might be unclear or incomplete",
+            "it seems like something might be unclear or incomplete",
+
+        ]
 
         if any(p in low for p in bad_patterns):
             return "__NO_SPEECH__"
 
-
-        if (
-            len(t.split()) > 12 and
-            t.count(",") + t.count(".") > 1
-        ):
-            return "__NO_SPEECH__"
-
-
-        # Çok kısa ve anlamsız bazı kalıplar
         junk_exact = {
-                "empty audio",
-                "empty_audio",
-                "no speech detected",
-                "no clear speech detected",
-                }
+            "blank_audio",
+            "music_audio",
+            "music only",
+            "background music",
+            "speech not detected",
+            "voice not detected",
+            "empty audio",
+            "empty_audio",
+            "no speech detected",
+            "no clear speech detected",
+        }
+
         if low in junk_exact:
             return "__NO_SPEECH__"
 
