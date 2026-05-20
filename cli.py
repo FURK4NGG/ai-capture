@@ -2429,7 +2429,12 @@ class ChatCLI:
 
         bad_patterns = [
             "blank_audio",
+            "blank voice",
+            "blank_voice",
+            "sound_voice",
+            "sound voice",
             "music_audio",
+            "music voice",
             "i'm here",
             "i am here",
             "please upload",
