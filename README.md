@@ -2,7 +2,7 @@
 <!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
 <!-- cli icin resim -->
 <!-- ram tuketimi gibi bilgiler-->
-<!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,biz chat1deyken chat2 den cevap gelirse kullaniciya gosterme,ses editleme -->
+<!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,biz chat1deyken chat2 den cevap gelirse kullaniciya gosterme -->
 
 ## 👀 capture-ai Overview
 
@@ -67,7 +67,8 @@ Capture AI combines the flexibility of coding-focused AI tools with everyday AI 
 - [x] Language support [Turkish, English]*You can easily create your own language file*
 - [x] Caching the language file to avoid repeated file reads
 - [ ] Compatible with macOS, Windows
-- [ ] Audio Editing
+- [ ] Audio,Video,Gif Editing
+- [ ] Humanize Mode
 
 ## 📦 Setup
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
