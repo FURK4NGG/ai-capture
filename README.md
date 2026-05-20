@@ -408,42 +408,43 @@ Attached files can be toggled editable. The AI only modifies files when permissi
 23. Voice-to-text input  
 Supports microphone recording and transcription with online or local STT.
 
-24.STT countdown recording
-Voice recording can stop automatically after a configured timeout. When enabled, the remaining seconds are shown during recording.
+24. STT countdown recording  
+Voice recording stop automatically after a configured timeout. When enabled, the remaining seconds are shown during recording.
 
+25. STT silence auto-stop  
+Voice recording stop automatically when silence is detected. The silence duration can be configured from STT settings.
 
-
-25. Offline STT  
+26. Offline STT  
 Uses whisper.cpp with configured binary and model paths.
 
-26. Online STT  
+27. Online STT  
 Uses OpenRouter audio-capable models and sends WAV audio as input_audio.
 
-27. Token usage display  
+28. Token usage display  
 Shows input, output, and total token usage for each response when enabled.
 
-28. Token price display  
+29. Token price display  
 Can estimate message cost using a configurable token price value.
 
-29. Theme system  
+30. Theme system  
 Supports dark/light theme and custom UI colors.
 
-30. Language system  
+31. Language system  
 Supports external language files such as Turkish and English, with cached language loading.
 
-31. Prompt chooser  
+32. Prompt chooser  
 Prompt behavior blocks can be enabled/disabled, such as copyable, apply, PDF visual edit, file creation, structured output, and code mode.
 
-32. Terminal control  
+33. Terminal control  
 The project also supports terminal usage, excluding STT and some GUI-only features.
 
-33. Linux compatibility  
+34. Linux compatibility  
 Designed for Linux devices, including Arch and Debian/Ubuntu-based systems.
 
-34. Streaming response system  
+35. Streaming response system  
 AI responses are streamed in real-time. The assistant message appears gradually as it is being generated instead of waiting for the full response.
 
-35. Advanced PDF processing pipeline  
+36. Advanced PDF processing pipeline  
 pdf_text → extract text from the PDF → AI generates DOCX → app converts DOCX back to PDF  
 
       pdf_image → if PDF Image mode is selected, convert PDF pages to PNG → AI analyzes the image or returns a PNG  
@@ -456,45 +457,48 @@ pdf_text → extract text from the PDF → AI generates DOCX → app converts DO
                     → AI returns text_replacements JSON (and optionally images)  
                     → app rebuilds the PDF using the original layout with updated text and images
 
-36. Generated files system  
+37. Generated files system  
 AI can return generated files (PDF, DOCX, XLSX, etc.), which are automatically saved in the app cache and displayed in chat with download buttons.
 
-37. Structured file generation protocol  
+38. Structured file generation protocol  
 AI responses can include structured file_create blocks, allowing the app to generate real files programmatically without manual parsing.
 
-38. Editable file safety system  
+39. Editable file safety system  
 Files can be marked as editable or read-only. AI is strictly prevented from modifying files unless explicit permission is enabled.
 
-39. Smart PDF type detection  
+40. Smart PDF type detection  
 Automatically detects whether a PDF is text-based, image-based, or mixed, and applies the appropriate processing pipeline.
 
-40. Mixed PDF layout reconstruction  
+41. Mixed PDF layout reconstruction  
 For PDFs containing both text and images, the app extracts layout structure and rebuilds the document after AI modifications.
 
-41. Image-to-PDF auto conversion  
+42. Image-to-PDF auto conversion  
 If the AI returns image outputs (e.g., PNG), the app automatically converts them into PDF format when needed.
 
-42. Generated image caching  
+43. Generated image caching  
 All generated images are cached locally and can be reused without re-generation.
 
-43. AI-returned file handling  
+44. AI-returned file handling  
 Supports file outputs returned as base64 or URLs and converts them into downloadable files automatically.
 
-44. Modular prompt system  
+45. Modular prompt system  
 System prompts are divided into selectable blocks, allowing dynamic control over AI behavior without modifying core logic.
 
-45. Local provider startup automation  
+46. Local provider startup automation  
 Local AI providers can be automatically started or stopped using configured commands.
 
-46. Chat-aware context building  
+47. Chat-aware context building  
 The system intelligently builds context using recent messages, summaries, code context, and relevant memory chunks.
 
-47. Real-time independent multi-chat streaming  
+48. Real-time independent multi-chat streaming  
 Multiple chats can send AI requests simultaneously. Each chat processes, streams, and updates responses independently in real time.
 
-48. Integrated web search  
+49. Integrated web search  
 Supports AI-powered web search and current online information retrieval using Tavily.  
 User -> AI -> if required(User Permission) -> Tavily -> AI -> User
+
+50. CLI dynamic yes/no input  
+CLI prompts accept y, yes, n, no, the localized o_Yes / o_No values, and their first letters.
 </details>
 
 <details>
@@ -570,37 +574,43 @@ Eklenen dosyalar editable olarak işaretlenebilir. AI sadece izin verildiğinde 
 23. Voice-to-text girişi  
 Mikrofon ile kayıt ve online/local STT ile metne çevirme desteklenir.
 
-24. Offline STT  
+24. STT geri sayımlı kayıt  
+Ses kaydı, ayarlanan süre dolunca otomatik olarak durur. Etkinleştirildiğinde kayıt sırasında kalan süre gösterilir.
+
+25. STT sessizlikte otomatik durdurma  
+Ses kaydı, sessizlik algılandığında otomatik olarak durur. Sessizlik süresi STT ayarlarından değiştirilebilir.
+
+26. Offline STT  
 whisper.cpp kullanarak yerel ses tanıma yapılır.
 
-25. Online STT  
+27. Online STT  
 OpenRouter üzerinden ses modeli kullanılarak WAV verisi input_audio olarak gönderilir.
 
-26. Token kullanım gösterimi  
+28. Token kullanım gösterimi  
 Her mesaj için input, output ve toplam token kullanımı gösterilebilir.
 
-27. Token maliyet hesaplama  
+29. Token maliyet hesaplama  
 Mesaj maliyeti, ayarlanabilir token fiyatına göre tahmin edilebilir.
 
-28. Tema sistemi  
+30. Tema sistemi  
 Dark/light tema ve özelleştirilebilir UI renkleri desteklenir.
 
-29. Dil sistemi  
+31. Dil sistemi  
 Türkçe ve İngilizce gibi dış dil dosyaları desteklenir ve cache’lenerek performans artırılır.
 
-30. Prompt chooser  
+32. Prompt chooser  
 copyable, apply, PDF edit, file create, structured output ve code gibi prompt blokları açılıp kapatılabilir.
 
-31. Terminal kontrolü  
+33. Terminal kontrolü  
 STT ve bazı UI özellikleri hariç terminal üzerinden kullanım desteklenir.
 
-32. Linux uyumluluğu  
+34. Linux uyumluluğu  
 Arch ve Debian/Ubuntu dahil Linux sistemler için tasarlanmıştır.
 
-33. Streaming yanıt sistemi  
+35. Streaming yanıt sistemi  
 AI yanıtları gerçek zamanlı olarak akış halinde gösterilir. Asistan mesajı, tamamının oluşmasını beklemek yerine yazılırken kademeli olarak ekranda görünür.
 
-34. Gelişmiş PDF işleme pipeline’ı  
+36. Gelişmiş PDF işleme pipeline’ı  
 pdf_text → PDF’ten metin çıkarılır → AI DOCX üretir → uygulama DOCX’i tekrar PDF’e çevirir
 
       pdf_image → PDF Image modu seçiliyse sayfalar PNG’ye çevrilir → AI görseli analiz eder veya PNG döndürür
@@ -613,45 +623,48 @@ pdf_text → PDF’ten metin çıkarılır → AI DOCX üretir → uygulama DOCX
       → AI text_replacements JSON (ve opsiyonel görseller) döndürür
       → uygulama orijinal layout’u kullanarak PDF’i yeniden oluşturur
 
-35. Üretilen dosya sistemi  
+37. Üretilen dosya sistemi  
 AI tarafından oluşturulan dosyalar (PDF, DOCX, XLSX vb.) otomatik olarak uygulama cache dizinine kaydedilir ve sohbet içinde indirme butonlarıyla gösterilir.
 
-36. Yapılandırılmış dosya üretim protokolü  
+38. Yapılandırılmış dosya üretim protokolü  
 AI yanıtları, manuel parse gerektirmeden doğrudan dosya üretimini sağlayan yapılandırılmış file_create blokları içerebilir.
 
-37. Düzenlenebilir dosya güvenlik sistemi  
+39. Düzenlenebilir dosya güvenlik sistemi  
 Dosyalar düzenlenebilir veya salt okunur olarak işaretlenebilir. Açık izin verilmeden AI’ın dosyaları değiştirmesi kesin olarak engellenir.
 
-38. Akıllı PDF türü tespiti  
+40. Akıllı PDF türü tespiti  
 PDF’in metin tabanlı, görsel tabanlı veya karışık olup olmadığı otomatik olarak tespit edilir ve uygun işleme pipeline’ı uygulanır.
 
-39. Karışık PDF layout yeniden oluşturma  
+41. Karışık PDF layout yeniden oluşturma  
 Hem metin hem görsel içeren PDF’lerde, layout yapısı çıkarılır ve AI düzenlemelerinden sonra belge yeniden oluşturulur.
 
-40. Görselden PDF’e otomatik dönüşüm  
+42. Görselden PDF’e otomatik dönüşüm  
 AI görsel (örneğin PNG) çıktısı verdiğinde, uygulama bunu otomatik olarak PDF formatına dönüştürür.
 
-41. Üretilen görsel cache sistemi  
+43. Üretilen görsel cache sistemi  
 Oluşturulan tüm görseller yerel olarak cache’lenir ve tekrar üretmeye gerek kalmadan yeniden kullanılabilir.
 
-42. AI tarafından dönen dosya işleme sistemi  
+44. AI tarafından dönen dosya işleme sistemi  
 Base64 veya URL olarak dönen dosyalar desteklenir ve otomatik olarak indirilebilir dosyalara dönüştürülür.
 
-43. Modüler prompt sistemi  
+45. Modüler prompt sistemi  
 Sistem prompt’ları bloklara ayrılmıştır ve dinamik olarak açılıp kapatılarak AI davranışı kontrol edilebilir.
 
-44. Local provider başlatma otomasyonu  
+46. Local provider başlatma otomasyonu  
 Yerel AI sağlayıcıları, tanımlı komutlar ile otomatik olarak başlatılabilir veya durdurulabilir.
 
-45. Sohbet farkındalıklı context oluşturma  
+47. Sohbet farkındalıklı context oluşturma  
 Sistem; son mesajlar, özetler, kod context’i ve ilgili hafıza parçalarını kullanarak akıllı bir context oluşturur.
 
-46. Gerçek zamanlı bağımsız çoklu sohbet akışı  
+48. Gerçek zamanlı bağımsız çoklu sohbet akışı  
 Birden fazla sohbet aynı anda AI isteği gönderebilir. Her sohbet, diğer sohbetleri engellemeden gerçek zamanlı olarak bağımsız şekilde işlenir, yayınlanır ve güncellenir.
 
-47. Entegre web arama  
+49. Entegre web arama  
 Tavily kullanarak AI destekli web araması ve güncel çevrimiçi bilgi erişimi sağlar.  
 Kullanıcı -> AI -> eğer gerekliyse(Kullanıcı İzni) -> Tavily -> AI -> Kullanıcı
+
+50. CLI dinamik evet/hayır girişi  
+CLI istemleri y, yes, n, no, yerelleştirilmiş o_Yes / o_No değerlerini ve bunların ilk harflerini kabul eder.
 </details>
 
 ## 🔒 License  
