@@ -19,8 +19,8 @@
   "whisper_cpp_bin": "/home/bob/whisper.cpp/build/bin/whisper-cli",
   "whisper_cpp_model": "/home/bob/.local/share/whisper/ggml-tiny.bin",
   "use_stt_timeout": false,
-  "use_stt_silence": false,
   "stt_timeout": "10",
+  "use_stt_silence": false,
   "stt_silence_duration": "2",
   "pinned_chats": [
     "Welcome.json"
