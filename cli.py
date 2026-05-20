@@ -1472,7 +1472,7 @@ class ChatCLI:
             stderr_text = fix_mojibake(stderr_text)
 
             if proc.returncode != 0:
-                err = (stderr_text or stdout_text or "Bilinmeyen hata").strip()
+                err = (stderr_text or stdout_text or self("o_Unknown_Error")).strip()
                 self.handle_ai_error(err)
                 return None
 
@@ -1869,8 +1869,8 @@ class ChatCLI:
 
             if fpath == item["path"]:
                 f["edit"] = not bool(f.get("edit", False))
-                mark = "ON" if f["edit"] else "OFF"
-                print(f"\n✔ Edit {mark}: {item['name']}")
+                mark = self("o_On") if f["edit"] else self("o_Off")
+                print(f"\n✔ {self('o_Edit_Mode')} {mark}: {item['name']}")
                 self._read_input(f"\n{self('o_to_Menu')}")
                 return True
 
@@ -1884,7 +1884,7 @@ class ChatCLI:
             out.write_bytes(raw)
             return str(out.resolve())
         except Exception as e:
-            print(f"save_base64_image error: {e}")
+            print(self("o_Error_With_Detail", error=str(e)))
             return None
 
     def download_image_to_cache(self, url: str) -> str | None:
@@ -1903,7 +1903,7 @@ class ChatCLI:
             urllib.request.urlretrieve(url, str(out))
             return str(out.resolve())
         except Exception as e:
-            print(f"download_image_to_cache error: {e}")
+            print(self("o_Error_With_Detail", error=str(e)))
             return None
 
     def add_file_prompt(self):
@@ -2247,7 +2247,7 @@ class ChatCLI:
                         if line:
                             low = line.decode("utf-8", errors="ignore").lower()
 
-                            if "silence_start" in low and elapsed >= 1.5:
+                            if ("silence_start" in low or "silence_end" in low) and elapsed >= 1.5:
                                 return "silence"
                 except Exception:
                     pass
@@ -2424,17 +2424,12 @@ class ChatCLI:
 
         low = normalized.lower()
 
-        if "empty_audio" in low:
+        if low.strip().lower() == "empty_audio":
             return "__NO_SPEECH__"
 
         bad_patterns = [
             "blank_audio",
-            "blank voice",
-            "blank_voice",
-            "sound_voice",
-            "sound voice",
             "music_audio",
-            "music voice",
             "i'm here",
             "i am here",
             "please upload",
@@ -2512,12 +2507,7 @@ class ChatCLI:
                         "content": [
                             {
                                 "type": "text",
-                                "text": (
-                                    "Speech-to-text only. "
-                                    "Return only verbatim transcription. "
-                                    "No replies, no explanations, no apologies, no labels. "
-                                    "If speech is unclear or missing, return exactly EMPTY_AUDIO."
-                                )
+                                "text": self("o_STT_Transcription_Prompt")
                             },
                             {
                                 "type": "input_audio",
@@ -3087,7 +3077,7 @@ class ChatCLI:
             self.ai_cancel_requested = False
 
             if proc.stdout is None or proc.stderr is None:
-                raise RuntimeError("Popen stdout/stderr PIPE değil (None geldi)")
+                raise RuntimeError(self("o_Unknown_Error"))
 
             decoder = codecs.getincrementaldecoder("utf-8")("replace")
             partial = ""
