@@ -408,37 +408,42 @@ Attached files can be toggled editable. The AI only modifies files when permissi
 23. Voice-to-text input  
 Supports microphone recording and transcription with online or local STT.
 
-24. Offline STT  
+24.STT countdown recording
+Voice recording can stop automatically after a configured timeout. When enabled, the remaining seconds are shown during recording.
+
+
+
+25. Offline STT  
 Uses whisper.cpp with configured binary and model paths.
 
-25. Online STT  
+26. Online STT  
 Uses OpenRouter audio-capable models and sends WAV audio as input_audio.
 
-26. Token usage display  
+27. Token usage display  
 Shows input, output, and total token usage for each response when enabled.
 
-27. Token price display  
+28. Token price display  
 Can estimate message cost using a configurable token price value.
 
-28. Theme system  
+29. Theme system  
 Supports dark/light theme and custom UI colors.
 
-29. Language system  
+30. Language system  
 Supports external language files such as Turkish and English, with cached language loading.
 
-30. Prompt chooser  
+31. Prompt chooser  
 Prompt behavior blocks can be enabled/disabled, such as copyable, apply, PDF visual edit, file creation, structured output, and code mode.
 
-31. Terminal control  
+32. Terminal control  
 The project also supports terminal usage, excluding STT and some GUI-only features.
 
-32. Linux compatibility  
+33. Linux compatibility  
 Designed for Linux devices, including Arch and Debian/Ubuntu-based systems.
 
-33. Streaming response system  
+34. Streaming response system  
 AI responses are streamed in real-time. The assistant message appears gradually as it is being generated instead of waiting for the full response.
 
-34. Advanced PDF processing pipeline  
+35. Advanced PDF processing pipeline  
 pdf_text → extract text from the PDF → AI generates DOCX → app converts DOCX back to PDF  
 
       pdf_image → if PDF Image mode is selected, convert PDF pages to PNG → AI analyzes the image or returns a PNG  
@@ -451,43 +456,43 @@ pdf_text → extract text from the PDF → AI generates DOCX → app converts DO
                     → AI returns text_replacements JSON (and optionally images)  
                     → app rebuilds the PDF using the original layout with updated text and images
 
-35. Generated files system  
+36. Generated files system  
 AI can return generated files (PDF, DOCX, XLSX, etc.), which are automatically saved in the app cache and displayed in chat with download buttons.
 
-36. Structured file generation protocol  
+37. Structured file generation protocol  
 AI responses can include structured file_create blocks, allowing the app to generate real files programmatically without manual parsing.
 
-37. Editable file safety system  
+38. Editable file safety system  
 Files can be marked as editable or read-only. AI is strictly prevented from modifying files unless explicit permission is enabled.
 
-38. Smart PDF type detection  
+39. Smart PDF type detection  
 Automatically detects whether a PDF is text-based, image-based, or mixed, and applies the appropriate processing pipeline.
 
-39. Mixed PDF layout reconstruction  
+40. Mixed PDF layout reconstruction  
 For PDFs containing both text and images, the app extracts layout structure and rebuilds the document after AI modifications.
 
-40. Image-to-PDF auto conversion  
+41. Image-to-PDF auto conversion  
 If the AI returns image outputs (e.g., PNG), the app automatically converts them into PDF format when needed.
 
-41. Generated image caching  
+42. Generated image caching  
 All generated images are cached locally and can be reused without re-generation.
 
-42. AI-returned file handling  
+43. AI-returned file handling  
 Supports file outputs returned as base64 or URLs and converts them into downloadable files automatically.
 
-43. Modular prompt system  
+44. Modular prompt system  
 System prompts are divided into selectable blocks, allowing dynamic control over AI behavior without modifying core logic.
 
-44. Local provider startup automation  
+45. Local provider startup automation  
 Local AI providers can be automatically started or stopped using configured commands.
 
-45. Chat-aware context building  
+46. Chat-aware context building  
 The system intelligently builds context using recent messages, summaries, code context, and relevant memory chunks.
 
-46. Real-time independent multi-chat streaming  
+47. Real-time independent multi-chat streaming  
 Multiple chats can send AI requests simultaneously. Each chat processes, streams, and updates responses independently in real time.
 
-47. Integrated web search  
+48. Integrated web search  
 Supports AI-powered web search and current online information retrieval using Tavily.  
 User -> AI -> if required(User Permission) -> Tavily -> AI -> User
 </details>
