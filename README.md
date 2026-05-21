@@ -70,7 +70,7 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
 - [ ] Audio,Video,Gif Editing
 - [ ] Humanize Mode
 
-Recommended online models for common usage types:  
+- Recommended online models for common usage types:  
 
 Voice (STT) → openai/gpt-audio-mini  
 Text → openai/gpt-5  
