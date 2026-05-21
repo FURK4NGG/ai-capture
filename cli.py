@@ -158,6 +158,11 @@ class ChatCLI:
             "ask_for_web_search": True,
             "prompt_chooser_blocks": ["copyable"],
             "response_style": "normal",
+            "use_image_settings": False,
+            "image_resolution": "1920x1080",
+            "image_aspect_ratio": "16:9",
+            "image_quality": "medium",
+            "image_style": "",
             "show_usage": True,
             "show_token_value": False,
             "token_value": "2.0",
@@ -217,6 +222,7 @@ class ChatCLI:
 
         bool_keys = [
             "ask_for_web_search",
+            "use_image_settings",
             "show_usage",
             "show_token_value",
             "force_ui_language",
@@ -2687,6 +2693,69 @@ class ChatCLI:
 
         return line.strip()
 
+    def _is_image_file_path(self, path: str) -> bool:
+        ext = Path(str(path or "")).suffix.lower()
+        return ext in (
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".webp",
+            ".gif",
+            ".bmp",
+            ".tiff",
+            ".tif",
+        )
+
+
+    def _message_has_image_file(self, msg: dict) -> bool:
+        if not isinstance(msg, dict):
+            return False
+
+        if self._is_image_file_path(msg.get("image")):
+            return True
+
+        images = msg.get("images")
+        if isinstance(images, list):
+            for p in images:
+                if self._is_image_file_path(p):
+                    return True
+
+        files = msg.get("files")
+        if isinstance(files, list):
+            for f in files:
+                if isinstance(f, dict) and self._is_image_file_path(f.get("path")):
+                    return True
+
+        return False
+
+
+    def _build_image_settings_suffix(self) -> str:
+        cfg = self.load_config()
+
+        if not bool(cfg.get("use_image_settings", False)):
+            return ""
+
+        parts = []
+
+        resolution = str(cfg.get("image_resolution", "")).strip()
+        aspect_ratio = str(cfg.get("image_aspect_ratio", "")).strip()
+        quality = str(cfg.get("image_quality", "")).strip()
+        style = str(cfg.get("image_style", "")).strip()
+
+        if resolution:
+            parts.append(f"resolution:{resolution}")
+        if aspect_ratio:
+            parts.append(f"aspect_ratio:{aspect_ratio}")
+        if quality:
+            parts.append(f"quality:{quality}")
+        if style:
+            parts.append(f"style:{style}")
+
+        if not parts:
+            return ""
+
+        return "\n\nimage{" + ", ".join(parts) + "}"
+
     def append_user_message(self, message: str):
         messages = self.load_chat_messages()
 
@@ -2761,6 +2830,29 @@ class ChatCLI:
                     }
 
                     new_message["files"].append(file_obj)
+        should_add_image_settings = False
+
+        # 1) Şu an gönderilen eklerde image varsa
+        if isinstance(new_message.get("images"), list) and new_message["images"]:
+            should_add_image_settings = True
+
+        # 2) Referans seçildiyse, referans mesajlarında image var mı?
+        if not should_add_image_settings:
+            ref_idxs = new_message.get("used_refs") or []
+
+            if isinstance(ref_idxs, list):
+                for ridx in ref_idxs:
+                    if isinstance(ridx, int) and 0 <= ridx < len(messages):
+                        if self._message_has_image_file(messages[ridx]):
+                            should_add_image_settings = True
+                            break
+
+        if should_add_image_settings:
+            image_suffix = self._build_image_settings_suffix()
+
+            if image_suffix and image_suffix not in final_message:
+                final_message = final_message + image_suffix
+                new_message["content"] = final_message
 
         messages.append(new_message)
         self.save_chat_messages(messages)
@@ -4370,6 +4462,63 @@ class ChatCLI:
 
             elif choice == "4":
                 return
+    def menu_image_settings(self):
+        while True:
+            self.clear_screen()
+
+            cfg = self.load_config()
+            self.ensure_base_config()
+            cfg = self.load_config()
+
+            use_image_settings = bool(cfg.get("use_image_settings", False))
+            image_resolution = str(cfg.get("image_resolution", "1920x1080") or "1920x1080")
+            image_aspect_ratio = str(cfg.get("image_aspect_ratio", "16:9") or "16:9")
+            image_quality = str(cfg.get("image_quality", "medium") or "medium")
+            image_style = str(cfg.get("image_style", "") or "")
+
+            print(f"\n={self('o_Use_Image_Settings')}=")
+            print(f"1) {self('o_Use_Image_Settings')}: {'✅' if use_image_settings else '❌'}")
+            print(f"2) {self('o_Image_Resolution')}: {image_resolution}")
+            print(f"3) {self('o_Image_Aspect_Ratio')}: {image_aspect_ratio}")
+            print(f"4) {self('o_Image_Quality')}: {image_quality}")
+            print(f"5) {self('o_Image_Style')}: {image_style}")
+            print(f"6) {self('o_Go_Back')}")
+
+            choice = self._read_input(f"\n{self('o_Selection')}: ").strip()
+
+            if choice == "1":
+                cfg["use_image_settings"] = not use_image_settings
+                self.save_config(cfg)
+
+            elif choice == "2":
+                val = self._read_input(f"{self('o_New_Value')} ").strip()
+                if not self._is_escape_input(val):
+                    cfg["image_resolution"] = val or "1920x1080"
+                    self.save_config(cfg)
+
+            elif choice == "3":
+                val = self._read_input(f"{self('o_New_Value')} ").strip()
+                if not self._is_escape_input(val):
+                    cfg["image_aspect_ratio"] = val or "16:9"
+                    self.save_config(cfg)
+
+            elif choice == "4":
+                val = self._read_input(f"{self('o_New_Value')} ").strip()
+                if not self._is_escape_input(val):
+                    cfg["image_quality"] = val or "medium"
+                    self.save_config(cfg)
+
+            elif choice == "5":
+                val = self._read_input(f"{self('o_New_Value')} ")
+
+                if val == "\x1b" or val.strip().lower() in {"esc", ":q"}:
+                    continue
+
+                cfg["image_style"] = val.strip()
+                self.save_config(cfg)
+
+            elif choice == "6":
+                return
 
     def menu_personalization(self):
         while True:
@@ -4508,21 +4657,43 @@ class ChatCLI:
                     self._read_input(f"\n{self('o_to_Menu')}")
 
             elif choice == "4":
-                cfg = self.load_config()
-                current = str(cfg.get("response_style", "") or "")
-                print(f"\n{self('o_Response_Style')}:\n{current}\n")
-                print(f"\n{self('o_Type_ESC')}")
-                print(f"\n\n{self('o_New_Value')}")
-                new_style = input(f"\n({self('o_Response_Style_Placeholder')})").strip()
+                while True:
+                    self.clear_screen()
 
-                if self._is_escape_input(new_style):
-                    continue
+                    cfg = self.load_config()
+                    current = str(cfg.get("response_style", "") or "")
+                    use_image_settings = bool(cfg.get("use_image_settings", False))
 
-                if new_style:
-                    cfg["response_style"] = new_style
-                    self.save_config(cfg)
-                    print(f"\n✔ {self('o_Saved')}({self('o_Response_Style')})")
-                    self._read_input(f"\n{self('o_to_Menu')}")
+                    print(f"\n={self('o_Response_Style')}=")
+                    print(f"1) {self('o_Response_Style')}: {current}")
+                    print(f"2) {self('o_Use_Image_Settings')}: {'✅' if use_image_settings else '❌'}")
+                    print(f"3) {self('o_Go_Back')}")
+
+                    sub = self._read_input(f"\n{self('o_Selection')}: ").strip()
+
+                    if sub == "1":
+                        print(f"\n{self('o_Response_Style')}:\n{current}\n")
+                        print(f"\n{self('o_Type_ESC')}")
+                        print(f"\n\n{self('o_New_Value')}")
+
+                        new_style = self._read_input(
+                            f"\n({self('o_Response_Style_Placeholder')}) "
+                        ).strip()
+
+                        if self._is_escape_input(new_style):
+                            continue
+
+                        if new_style:
+                            cfg["response_style"] = new_style
+                            self.save_config(cfg)
+                            print(f"\n✔ {self('o_Saved')} ({self('o_Response_Style')})")
+                            self._read_input(f"\n{self('o_to_Menu')}")
+
+                    elif sub == "2":
+                        self.menu_image_settings()
+
+                    elif sub == "3":
+                        break
 
 
             elif choice == "5":

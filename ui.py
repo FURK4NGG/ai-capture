@@ -83,6 +83,11 @@ def ensure_base_config(config: dict) -> dict:
         "ask_for_web_search": True,
         "prompt_chooser_blocks": ["copyable"],
         "response_style": "normal",
+        "use_image_settings": False,
+        "image_resolution": "1920x1080",
+        "image_aspect_ratio": "16:9",
+        "image_quality": "medium",
+        "image_style": "",
         "show_usage": True,
         "show_token_value": False,
         "token_value": "2.0",
@@ -148,6 +153,7 @@ def ensure_base_config(config: dict) -> dict:
     bool_keys = [
         "dark_mode",
         "ask_for_web_search",
+        "use_image_settings",
         "show_usage",
         "show_token_value",
         "force_ui_language",
@@ -175,6 +181,12 @@ def ensure_base_config(config: dict) -> dict:
             continue
 
         if isinstance(default, str):
+            if key == "image_style":
+                if not isinstance(value, str):
+                    config[key] = ""
+                    changed = True
+                continue
+
             if not isinstance(value, str) or not value.strip():
                 config[key] = default
                 changed = True
@@ -5290,49 +5302,124 @@ class ChatApp(Gtk.Application):
         content.set_margin_start(10)
         content.set_margin_end(10)
 
+        cfg = ensure_base_config(self.load_config())
 
         label = Gtk.Label()
         self.bind_i18n(label, "label", "o_Response_Style")
         label.set_xalign(0)
         content.append(label)
 
-
         entry = Gtk.Entry()
         self.add_entry_clipboard_shortcuts(entry, dialog)
         self.bind_i18n(entry, "placeholder", "o_Response_Style_Placeholder")
-
-        cfg = ensure_base_config(self.load_config())
-        entry.set_text(cfg["response_style"])
-
+        entry.set_text(str(cfg.get("response_style", "normal")))
         content.append(entry)
+
+        # --- Use Image Settings switch ---
+        image_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        image_label = Gtk.Label()
+        self.bind_i18n(image_label, "label", "o_Use_Image_Settings")
+        image_label.set_xalign(0)
+        image_label.set_hexpand(True)
+
+        image_switch = Gtk.Switch()
+        image_switch.set_active(bool(cfg.get("use_image_settings", False)))
+        image_switch.set_halign(Gtk.Align.END)
+        image_switch.set_valign(Gtk.Align.CENTER)
+
+        image_row.append(image_label)
+        image_row.append(image_switch)
+        content.append(image_row)
+
+        def add_image_entry(label_key, config_key, default_value):
+            lab = Gtk.Label()
+            self.bind_i18n(lab, "label", label_key)
+            lab.set_xalign(0)
+            content.append(lab)
+
+            ent = Gtk.Entry()
+            ent.set_text(str(cfg.get(config_key, default_value)))
+            ent.set_placeholder_text(str(default_value))
+            self.add_entry_clipboard_shortcuts(ent, dialog)
+            content.append(ent)
+
+            return lab, ent
+
+        resolution_label, resolution_entry = add_image_entry(
+            "o_Image_Resolution",
+            "image_resolution",
+            "1920x1080"
+        )
+
+        aspect_label, aspect_entry = add_image_entry(
+            "o_Image_Aspect_Ratio",
+            "image_aspect_ratio",
+            "16:9"
+        )
+
+        quality_label, quality_entry = add_image_entry(
+            "o_Image_Quality",
+            "image_quality",
+            "high"
+        )
+
+        style_label, style_entry = add_image_entry(
+            "o_Image_Style",
+            "image_style",
+            ""
+        )
+
+        image_widgets = [
+            resolution_label,
+            resolution_entry,
+            aspect_label,
+            aspect_entry,
+            quality_label,
+            quality_entry,
+            style_label,
+            style_entry,
+        ]
+
+        def refresh_image_settings_sensitive(*_):
+            active = bool(image_switch.get_active())
+
+            for w in image_widgets:
+                w.set_sensitive(active)
+
+        image_switch.connect("notify::active", refresh_image_settings_sensitive)
+        refresh_image_settings_sensitive()
 
         dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
         dialog.add_button(self("o_Save"), Gtk.ResponseType.OK)
 
-
-        # Enter → Kaydet
         entry.connect("activate", lambda *_: dialog.response(Gtk.ResponseType.OK))
 
         def on_response(d, resp):
             if resp == Gtk.ResponseType.OK:
-                cfg2 = self.load_config()
-                cfg2["response_style"] = entry.get_text().strip()
+                cfg2 = ensure_base_config(self.load_config())
+
+                cfg2["response_style"] = entry.get_text().strip() or "normal"
+                cfg2["use_image_settings"] = bool(image_switch.get_active())
+                cfg2["image_resolution"] = resolution_entry.get_text().strip() or "1920x1080"
+                cfg2["image_aspect_ratio"] = aspect_entry.get_text().strip() or "16:9"
+                cfg2["image_quality"] = quality_entry.get_text().strip() or "high"
+                cfg2["image_style"] = style_entry.get_text().strip()
+
                 self.save_config(cfg2)
 
             d.close()
 
         dialog.connect("response", on_response)
-
         dialog.show()
 
-        # Fokus ver ama seçim yapma
         def focus_entry():
             entry.grab_focus()
-            entry.set_position(-1)   # cursor sona gider
-            entry.select_region(0, 0)  # seçim yok
+            entry.set_position(-1)
+            entry.select_region(0, 0)
             return False
 
-        GLib.idle_add(focus_entry)    
+        GLib.idle_add(focus_entry)
 
 
     def open_key_dialog(self, _button=None):
@@ -7407,11 +7494,11 @@ class ChatApp(Gtk.Application):
         remaining = int(timeout - elapsed)
 
         if remaining <= 0:
-            self.mic_btn.set_tooltip_text("Timeout: 0")
+            self.mic_btn.set_tooltip_text(f"{self('o_Timeout')}: 0")
             GLib.idle_add(self._stop_voice_recording_and_transcribe)
             return False
 
-        self.mic_btn.set_tooltip_text(f"Timeout: {remaining}")
+        self.mic_btn.set_tooltip_text(f"{self('o_Timeout')}: {remaining}")
         return True
 
 
@@ -7564,7 +7651,7 @@ class ChatApp(Gtk.Application):
         self._voice_countdown_active = True
 
         if use_timeout:
-            self.mic_btn.set_tooltip_text(f"Timeout: {int(timeout_seconds)}")
+            self.mic_btn.set_tooltip_text(f"{self('o_Timeout')}: {int(timeout_seconds)}")
         else:
             self.bind_i18n(self.mic_btn, "tooltip", "o_Stop_Recording")
 
@@ -8115,6 +8202,69 @@ class ChatApp(Gtk.Application):
 
     # ---------------- SEND / CALL AI ----------------
 
+    def _is_image_file_path(self, path: str) -> bool:
+        ext = Path(str(path or "")).suffix.lower()
+        return ext in (
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".webp",
+            ".gif",
+            ".bmp",
+            ".tiff",
+            ".tif",
+        )
+
+
+    def _message_has_image_file(self, msg: dict) -> bool:
+        if not isinstance(msg, dict):
+            return False
+
+        if self._is_image_file_path(msg.get("image")):
+            return True
+
+        images = msg.get("images")
+        if isinstance(images, list):
+            for p in images:
+                if self._is_image_file_path(p):
+                    return True
+
+        files = msg.get("files")
+        if isinstance(files, list):
+            for f in files:
+                if isinstance(f, dict) and self._is_image_file_path(f.get("path")):
+                    return True
+
+        return False
+
+
+    def _build_image_settings_suffix(self) -> str:
+        cfg = ensure_base_config(self.load_config())
+
+        if not bool(cfg.get("use_image_settings", False)):
+            return ""
+
+        parts = []
+
+        resolution = str(cfg.get("image_resolution", "")).strip()
+        aspect_ratio = str(cfg.get("image_aspect_ratio", "")).strip()
+        quality = str(cfg.get("image_quality", "")).strip()
+        style = str(cfg.get("image_style", "")).strip()
+
+        if resolution:
+            parts.append(f"resolution:{resolution}")
+        if aspect_ratio:
+            parts.append(f"aspect_ratio:{aspect_ratio}")
+        if quality:
+            parts.append(f"quality:{quality}")
+        if style:
+            parts.append(f"style:{style}")
+
+        if not parts:
+            return ""
+
+        return "\n\nimage{" + ", ".join(parts) + "}"
+
     def send_message(self, widget):
         buffer = self.textview.get_buffer()
         start, end = buffer.get_bounds()
@@ -8194,6 +8344,28 @@ class ChatApp(Gtk.Application):
                 groups.append({"items": group_items})
 
             new_message["refs_groups"] = groups
+
+        should_add_image_settings = False
+
+        # 1) Kullanıcı şu anda png/jpg/webp vs eklediyse
+        if self.pending_images:
+            should_add_image_settings = True
+
+        # 2) Kullanıcı referans olarak içinde image olan eski mesajı seçtiyse
+        if not should_add_image_settings:
+            ref_idxs = new_message.get("used_refs") or []
+            if isinstance(ref_idxs, list):
+                for ridx in ref_idxs:
+                    if isinstance(ridx, int) and 0 <= ridx < len(messages):
+                        if self._message_has_image_file(messages[ridx]):
+                            should_add_image_settings = True
+                            break
+
+        if should_add_image_settings:
+            image_suffix = self._build_image_settings_suffix()
+            if image_suffix and image_suffix not in message:
+                message = message + image_suffix
+                new_message["content"] = message
 
         chat_data = self.load_chat_data_ui()
         messages = chat_data["messages"]
