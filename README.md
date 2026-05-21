@@ -1,5 +1,5 @@
 <!-- ai-controller -->
-<!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
+<!-- ~/capture-ai yerine baska yere kurarsa run vs devre disi,kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
 <!-- cli icin resim -->
 <!-- ram tuketimi gibi bilgiler-->
 <!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,biz chat1deyken chat2 den cevap gelirse kullaniciya gosterme -->
