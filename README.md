@@ -24,13 +24,15 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
 
 From a single prompt, it can:
 
-PDF → Extract → Transform → Rebuild → Download
+✨ PDF → Extract → Transform → Rebuild → Download
 
-It supports both online models (OpenRouter) and local AI providers, giving full control over performance, privacy, and behavior.
+✨ It supports both online models (OpenRouter) and local AI providers, giving full control over performance, privacy, and behavior.
 
-Everything in Capture AI is fully open-source and designed to be transparent, customizable, and user-controlled.
+✨ Everything in Capture AI is fully open-source and designed to be transparent, customizable, and user-controlled.
 
-Capture AI combines the flexibility of coding-focused AI tools with everyday AI workflows in a single application.
+✨ Capture AI combines the flexibility of coding-focused AI tools with everyday AI workflows in a single application.
+
+✨ Capture AI keeps long conversations fast and responsive by loading chats section-by-section instead of all at once. Chat data is stored locally on the computer rather than being constantly fetched from a remote database.
 
 
 [![Demo Video](https://github.com/FURK4NGG/capture-ai/blob/main/{}/capture-ai.png)](https://github.com/FURK4NGG/capture-ai/blob/main/{}/capture-ai.mp4)
