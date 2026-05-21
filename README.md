@@ -331,6 +331,12 @@ Text → openai/gpt-5
 Image, PDF Generation → x-ai/grok-imagine-image-quality  
 DOCX, XLSX Generation → openai/gpt-5  
 
+## Accessibility Support
+
+```
+bash GTK_A11Y=1 python ~/capture-ai/ui.py
+```
+
 
 ## ------------------HYPRLAND.CONF------------------
 $capture-ai = /home/$USER/capture-ai/capture-ai.sh  
