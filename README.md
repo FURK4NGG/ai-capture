@@ -22,8 +22,7 @@ All in a single system.
 
 Unlike traditional chat tools, Capture AI can understand, transform, and generate real files — not just text.
 
-✨ From a single prompt, it can:
-PDF → Extract → Transform → Rebuild → Download
+✨ From a single prompt, it can: PDF → Extract → Transform → Rebuild → Download
 
 ✨ It supports both online models (OpenRouter) and local AI providers, giving full control over performance, privacy, and behavior.
 
