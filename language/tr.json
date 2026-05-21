@@ -129,6 +129,8 @@
       "o_Token_Value": "Token Değeri",
       "o_Token_Value_Hint": "1M token başına ücret",
       "o_Total_Token_Price": "Toplam Token Ücreti",
+      "o_Disabled_Person_Mode": "Erişilebilirlik modu",
+      "o_Disabled_Person_Mode_Hint": "Butonlara, giriş alanlarına ve kontrollere ekran okuyucular için anlaşılır isimler ekler.",
       "o_Use_Image_Settings": "Resim Ayarlarını Kullan",
       "o_Image_Resolution": "Resim Çözünürlüğü",
       "o_Image_Aspect_Ratio": "Resim En-Boy Oranı",

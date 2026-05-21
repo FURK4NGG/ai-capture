@@ -129,6 +129,8 @@
       "o_Token_Value": "Token Value",
       "o_Token_Value_Hint": "Price per 1M tokens",
       "o_Total_Token_Price": "Total Token Price",
+      "o_Disabled_Person_Mode": "Accessibility mode",
+      "o_Disabled_Person_Mode_Hint": "Improves screen reader support by adding accessible names to buttons, inputs, and controls.",
       "o_Use_Image_Settings": "Use Image Settings",
       "o_Image_Resolution": "Image Resolution",
       "o_Image_Aspect_Ratio": "Image Aspect Ratio",
