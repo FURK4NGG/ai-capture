@@ -523,6 +523,9 @@ User -> AI -> if required(User Permission) -> Tavily -> AI -> User
 
 51. CLI dynamic yes/no input  
 CLI prompts accept y, yes, n, no, the localized o_Yes / o_No values, and their first letters.
+
+52. Accessibility support  
+Includes an optional accessibility mode for screen readers and assistive technologies such as Orca.When enabled, accessible labels are automatically generated for newly created UI elements, buttons, inputs, switches, and other interface components to improve navigation for visually impaired users.
 </details>
 
 <details>
@@ -697,6 +700,9 @@ Kullanıcı -> AI -> eğer gerekliyse(Kullanıcı İzni) -> Tavily -> AI -> Kull
 
 51. CLI dinamik evet/hayır girişi  
 CLI istemleri y, yes, n, no, yerelleştirilmiş o_Yes / o_No değerlerini ve bunların ilk harflerini kabul eder.
+
+52. Erişilebilirlik desteği  
+Orca gibi ekran okuyucular ve yardımcı erişilebilirlik teknolojileri için isteğe bağlı bir erişilebilirlik modu içerir.Etkinleştirildiğinde, görme engelli kullanıcılar için gezinmeyi iyileştirmek amacıyla yeni oluşturulan arayüz öğeleri, butonlar, giriş alanları, switchler ve diğer arayüz bileşenleri için erişilebilir etiketler otomatik olarak oluşturulur.
 </details>
 
 ## 🔒 License  
