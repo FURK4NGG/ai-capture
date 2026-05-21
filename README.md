@@ -335,8 +335,15 @@ DOCX, XLSX Generation → openai/gpt-5
 
 ## Accessibility Support (Orca)
 
+Type this in a terminal:
 ```
-bash GTK_A11Y=1 python ~/capture-ai/ui.py
+sudo pacman -S orca speech-dispatcher espeak-ng
+speech-dispatcher -d
+orca
+```
+Type this in different terminal tab:
+```
+ GTK_A11Y=1 python ~/capture-ai/ui.py
 ```
 
 
