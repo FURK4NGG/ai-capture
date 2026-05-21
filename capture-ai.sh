@@ -1,5 +1,5 @@
 #!/bin/bash
-source "$HOME/.config/capture-ai/env.sh"
+[ -f "$HOME/.config/capture-ai/env.sh" ] && source "$HOME/.config/capture-ai/env.sh"
 
 set -e
 
