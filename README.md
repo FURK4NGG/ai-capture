@@ -333,7 +333,7 @@ Text → openai/gpt-5
 Image, PDF Generation → x-ai/grok-imagine-image-quality  
 DOCX, XLSX Generation → openai/gpt-5  
 
-## Accessibility Support (Orca)
+## ♿ Accessibility Support (Orca)
 
 Type this in a terminal:
 ```
