@@ -4,6 +4,8 @@ import sys
 import json
 import base64
 import shutil
+import termios
+import tty
 import tempfile
 import subprocess
 import codecs
@@ -95,6 +97,101 @@ class ChatCLI:
             return input(prompt)
         except EOFError:
             return ""
+
+    def _get_clipboard_text(self) -> str:
+        cmds = [
+            ["wl-paste"],
+            ["xclip", "-selection", "clipboard", "-o"],
+            ["xsel", "--clipboard", "--output"],
+        ]
+
+        for cmd in cmds:
+            if not shutil.which(cmd[0]):
+                continue
+
+            try:
+                p = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=2
+                )
+
+                if p.returncode == 0 and p.stdout:
+                    return p.stdout
+            except Exception:
+                pass
+
+        return ""
+
+    def _read_input_with_ctrl_shortcuts(self, prompt="") -> str:
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+
+        buf = ""
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+
+        try:
+            tty.setraw(fd)
+
+            while True:
+                ch = sys.stdin.read(1)
+
+                # ENTER
+                if ch in ("\r", "\n"):
+                    print()
+                    return buf
+
+                # CTRL+C
+                if ch == "\x03":
+                    raise KeyboardInterrupt
+
+                # CTRL+A -> başa git
+                if ch == "\x01":
+                    sys.stdout.write("\r")
+                    sys.stdout.write(prompt)
+                    sys.stdout.flush()
+                    continue
+
+                # CTRL+X -> satırı kes
+                if ch == "\x18":
+                    sys.stdout.write("\r")
+                    sys.stdout.write(" " * (len(prompt) + len(buf)))
+                    sys.stdout.write("\r")
+                    sys.stdout.write(prompt)
+                    sys.stdout.flush()
+                    buf = ""
+                    continue
+
+                # CTRL+V -> yapıştır
+                if ch == "\x16":
+                    clip = self._get_clipboard_text()
+                    if clip:
+                        buf += clip
+                        sys.stdout.write(clip)
+                        sys.stdout.flush()
+                    continue
+
+                # BACKSPACE
+                if ch in ("\x08", "\x7f"):
+                    if buf:
+                        buf = buf[:-1]
+                        sys.stdout.write("\b \b")
+                        sys.stdout.flush()
+                    continue
+
+                # CTRL+C benzeri karakterleri engelle
+                if ord(ch) < 32:
+                    continue
+
+                # normal karakter
+                buf += ch
+                sys.stdout.write(ch)
+                sys.stdout.flush()
+
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
     def _is_escape_input(self, s: str) -> bool:
         s = str(s or "")
@@ -2686,7 +2783,7 @@ class ChatCLI:
         print(f"{self('o_sub_Send_Message')}")
         print(f"{self('o_Type_ESC')}\n")
 
-        line = self._read_input(f"{self('o_Send_Message')}: ")
+        line = self._read_input_with_ctrl_shortcuts(f"{self('o_Send_Message')}: ")
 
         if self._is_escape_input(line):
             return ""
