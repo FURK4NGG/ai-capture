@@ -91,6 +91,7 @@ def ensure_base_config(config: dict) -> dict:
         "show_usage": True,
         "show_token_value": False,
         "token_value": "2.0",
+        "disabled_person_mode": False,
         "force_ui_language": False,
         "is_mic_online": True,
         "use_desktop_voice": False,
@@ -156,6 +157,7 @@ def ensure_base_config(config: dict) -> dict:
         "use_image_settings",
         "show_usage",
         "show_token_value",
+        "disabled_person_mode",
         "force_ui_language",
         "is_mic_online",
         "use_desktop_voice",
@@ -1517,6 +1519,7 @@ class ChatApp(Gtk.Application):
         self.setup_file_drop_target(self.content_box)
         self.setup_file_drop_target(self.scroll)
         self.win.present()
+        GLib.idle_add(self.apply_accessibility_recursive)
         GLib.idle_add(self.force_focus_entry)
         GLib.idle_add(self._update_bottom_spacer_height)
 
@@ -3975,6 +3978,67 @@ class ChatApp(Gtk.Application):
         key_controller.connect("key-pressed", on_key_pressed)
         entry_widget.add_controller(key_controller)
 
+    def is_disabled_person_mode_enabled(self) -> bool:
+        cfg = ensure_base_config(self.load_config())
+        return bool(cfg.get("disabled_person_mode", False))
+
+
+    def apply_accessibility_to_widget(self, widget):
+        if not self.is_disabled_person_mode_enabled():
+            return
+
+        try:
+            label_text = ""
+
+            tooltip_key = getattr(widget, "_i18n_tooltip_key", None)
+            label_key = getattr(widget, "_i18n_label_key", None)
+            placeholder_key = getattr(widget, "_i18n_placeholder_key", None)
+
+            if tooltip_key:
+                label_text = self(str(tooltip_key))
+            elif label_key:
+                label_text = self(str(label_key))
+            elif placeholder_key:
+                label_text = self(str(placeholder_key))
+            elif isinstance(widget, Gtk.Button):
+                child = widget.get_child()
+                if isinstance(child, Gtk.Label):
+                    label_text = child.get_text().strip()
+                elif hasattr(widget, "get_label"):
+                    label_text = str(widget.get_label() or "").strip()
+            elif isinstance(widget, Gtk.Entry):
+                label_text = str(widget.get_placeholder_text() or "").strip()
+
+            if label_text:
+                widget.update_property(
+                    [Gtk.AccessibleProperty.LABEL],
+                    [label_text]
+                )
+
+        except Exception:
+            pass
+
+
+    def apply_accessibility_recursive(self, widget=None):
+        if widget is None:
+            widget = getattr(self, "win", None)
+
+        if widget is None:
+            return
+
+        self.apply_accessibility_to_widget(widget)
+
+        try:
+            child = widget.get_first_child()
+        except Exception:
+            child = None
+
+        while child is not None:
+            self.apply_accessibility_recursive(child)
+            try:
+                child = child.get_next_sibling()
+            except Exception:
+                break
 
     def bind_i18n(self, widget, field: str, key: str):
         """
@@ -4031,6 +4095,11 @@ class ChatApp(Gtk.Application):
                 text = self(str(placeholder_key))
                 if hasattr(widget, "set_placeholder_text"):
                     widget.set_placeholder_text(text)
+        except Exception:
+            pass
+
+        try:
+            self.apply_accessibility_to_widget(widget)
         except Exception:
             pass
 
@@ -5189,6 +5258,36 @@ class ChatApp(Gtk.Application):
 
         content.append(row_token_value)
 
+        # --- DISABLED PERSON MODE SWITCH ---
+        row_disabled_person_mode = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        disabled_person_mode_label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        disabled_person_mode_label_box.set_hexpand(True)
+
+        disabled_person_mode_title = Gtk.Label()
+        self.bind_i18n(disabled_person_mode_title, "label", "o_Disabled_Person_Mode")
+        disabled_person_mode_title.set_xalign(0)
+        disabled_person_mode_title.set_halign(Gtk.Align.START)
+
+        disabled_person_mode_hint = Gtk.Label()
+        self.bind_i18n(disabled_person_mode_hint, "label", "o_Disabled_Person_Mode_Hint")
+        disabled_person_mode_hint.set_xalign(0)
+        disabled_person_mode_hint.set_halign(Gtk.Align.START)
+        disabled_person_mode_hint.set_wrap(True)
+        disabled_person_mode_hint.add_css_class("dim-label")
+
+        disabled_person_mode_label_box.append(disabled_person_mode_title)
+        disabled_person_mode_label_box.append(disabled_person_mode_hint)
+
+        disabled_person_mode_switch = Gtk.Switch()
+        disabled_person_mode_switch.set_active(bool(cfg.get("disabled_person_mode", False)))
+        disabled_person_mode_switch.set_halign(Gtk.Align.END)
+        disabled_person_mode_switch.set_valign(Gtk.Align.CENTER)
+
+        row_disabled_person_mode.append(disabled_person_mode_label_box)
+        row_disabled_person_mode.append(disabled_person_mode_switch)
+        content.append(row_disabled_person_mode)
+
 
         def refresh_token_value_sensitive(*_):
             active = bool(show_token_value_switch.get_active())
@@ -5252,6 +5351,7 @@ class ChatApp(Gtk.Application):
             usage_switch.set_active(True)
             show_token_value_switch.set_active(False)
             token_value_entry.set_text("2.0")
+            disabled_person_mode_switch.set_active(False)
             refresh_token_value_sensitive()
 
         reset_btn.connect("clicked", on_reset)
@@ -5261,6 +5361,7 @@ class ChatApp(Gtk.Application):
                 cfg2 = self.load_config()
                 cfg2["show_usage"] = bool(usage_switch.get_active())
                 cfg2["show_token_value"] = bool(show_token_value_switch.get_active())
+                cfg2["disabled_person_mode"] = bool(disabled_person_mode_switch.get_active())
 
                 val = token_value_entry.get_text().strip()
                 cfg2["token_value"] = val if val else "2.0"
@@ -5284,6 +5385,7 @@ class ChatApp(Gtk.Application):
                 self._save_theme_colors(new_colors)
                 self._save_chat_bg_image_path(bg_path)
                 self.refresh_entire_ui_theme()
+                GLib.idle_add(self.apply_accessibility_recursive)
 
             d.close()
 
