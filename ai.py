@@ -1686,7 +1686,7 @@ def _build_blocks_and_cache_info(msg: dict, cache_images_dir: Path | None, pdf_m
                                 f"mime: {mime}\n"
                                 f"editable: {'true' if editable else 'false'}\n"
                                 "type: pdf_mixed_text_only\n"
-                                "note: Images are preserved by the app. Do not regenerate or describe images.\n"
+                                f"note: {get_ui_text(load_config(), 'o_File_Note_Images_Preserved')}\n"
                                 "[CONTENT]\n"
                                 f"{json.dumps(text_blocks, ensure_ascii=False)}\n"
                                 "[/CONTENT]\n"
@@ -1749,7 +1749,7 @@ def _build_blocks_and_cache_info(msg: dict, cache_images_dir: Path | None, pdf_m
                             f"mime: {mime}\n"
                             f"editable: {'true' if editable else 'false'}\n"
                             "type: pdf_visual_pages\n"
-                            "note: PDF text could not be extracted. Pages are sent as images.\n"
+                            f"note: {get_ui_text(load_config(), 'o_File_Note_PDF_Pages_As_Images')}\n"
                             "[/FILE]\n"
                         )
                     })
@@ -1790,7 +1790,7 @@ def _build_blocks_and_cache_info(msg: dict, cache_images_dir: Path | None, pdf_m
                         f"mime: {mime}\n"
                         f"editable: {'true' if editable else 'false'}\n"
                         f"type: {file_type}\n"
-                        "IMPORTANT: The file content is already extracted below. Do not access the path.\n"
+                        f"IMPORTANT: {get_ui_text(load_config(), 'o_File_Content_Already_Extracted')}\n"
                         "[CONTENT]\n"
                         f"{file_text}\n"
                         "[/CONTENT]\n"
@@ -1807,7 +1807,7 @@ def _build_blocks_and_cache_info(msg: dict, cache_images_dir: Path | None, pdf_m
                         f"mime: {mime}\n"
                         f"editable: {'true' if editable else 'false'}\n"
                         "type: unsupported\n"
-                        "note: This file type cannot currently be read as text.\n"
+                        f"note: {get_ui_text(load_config(), 'o_File_Note_Unsupported_Text_Read')}\n"
                         "[/FILE]\n"
                     )
                 })
@@ -2116,6 +2116,180 @@ def _is_image_generation_model(model_name: str) -> bool:
         "stable-diffusion"
     ])
 
+def _extract_image_settings_from_text(text: str) -> tuple[dict, str]:
+    raw = str(text or "")
+
+    m = re.search(
+        r"image\s*\{\s*(.*?)\s*\}",
+        raw,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+
+    if not m:
+        return {}, raw
+
+    body = m.group(1)
+    settings = {}
+
+    for part in body.split(","):
+        part = part.strip()
+        if not part or ":" not in part:
+            continue
+
+        key, value = part.split(":", 1)
+        key = key.strip().lower()
+        value = value.strip()
+
+        if key and value:
+            settings[key] = value
+
+    clean_text = (raw[:m.start()] + raw[m.end():]).strip()
+    return settings, clean_text
+
+
+def _extract_image_settings_from_final_messages(final_messages: list[dict]) -> dict:
+    found = {}
+
+    for msg in reversed(final_messages):
+        if not isinstance(msg, dict):
+            continue
+
+        if msg.get("role") != "user":
+            continue
+
+        content = msg.get("content")
+
+        if isinstance(content, str):
+            settings, clean = _extract_image_settings_from_text(content)
+
+            if settings:
+                msg["content"] = clean
+                found.update(settings)
+                return found
+
+        elif isinstance(content, list):
+            for item in content:
+                if not isinstance(item, dict):
+                    continue
+
+                if item.get("type") != "text":
+                    continue
+
+                txt = item.get("text")
+
+                if not isinstance(txt, str):
+                    continue
+
+                settings, clean = _extract_image_settings_from_text(txt)
+
+                if settings:
+                    item["text"] = clean
+                    found.update(settings)
+                    return found
+
+    return found
+
+
+def _normalize_image_size_from_settings(settings: dict) -> str | None:
+    resolution = str(settings.get("resolution") or "").strip().lower()
+    aspect_ratio = str(settings.get("aspect_ratio") or "").strip().lower()
+
+    # Öncelik gerçek resolution
+    if resolution:
+        resolution = resolution.replace(" ", "")
+
+        if re.fullmatch(r"\d{3,5}x\d{3,5}", resolution):
+            return resolution
+
+    # Resolution yoksa aspect_ratio'dan yaygın size üret
+    ratio_map = {
+        "1:1": "1024x1024",
+        "16:9": "1920x1080",
+        "9:16": "1080x1920",
+        "4:3": "1600x1200",
+        "3:4": "1200x1600",
+        "3:2": "1536x1024",
+        "2:3": "1024x1536",
+    }
+
+    return ratio_map.get(aspect_ratio)
+
+
+def _apply_image_settings_to_payload(payload: dict, settings: dict):
+    if not isinstance(payload, dict) or not isinstance(settings, dict):
+        return
+
+    size = _normalize_image_size_from_settings(settings)
+
+    if size:
+        payload["size"] = size
+
+    aspect_ratio = str(settings.get("aspect_ratio") or "").strip().lower()
+    if aspect_ratio:
+        payload["aspect_ratio"] = aspect_ratio
+
+    quality = str(settings.get("quality") or "").strip().lower()
+
+    if quality:
+        payload["quality"] = quality
+
+def _build_image_settings_instruction(settings: dict, cfg: dict | None = None) -> str:
+    cfg = cfg or load_config()
+
+    if not isinstance(settings, dict) or not settings:
+        return ""
+
+    size = _normalize_image_size_from_settings(settings)
+    aspect_ratio = str(settings.get("aspect_ratio") or "").strip()
+    quality = str(settings.get("quality") or "").strip()
+    style = str(settings.get("style") or "").strip()
+
+    parts = []
+
+    if size:
+        parts.append(get_ui_text(cfg, "o_Image_Output_Size", size=size))
+    if aspect_ratio:
+        parts.append(get_ui_text(cfg, "o_Image_Output_Aspect_Ratio", aspect_ratio=aspect_ratio))
+    if quality:
+        parts.append(get_ui_text(cfg, "o_Image_Output_Quality", quality=quality))
+    if style:
+        parts.append(get_ui_text(cfg, "o_Image_Output_Style", style=style))
+
+    if not parts:
+        return ""
+
+    return (
+        get_ui_text(cfg, "o_Image_Output_Preferences_Title")
+        + "\n"
+        + "\n".join(f"- {p}" for p in parts)
+        + "\n"
+        + get_ui_text(cfg, "o_Image_Output_Preferences_Note")
+    )
+
+def _append_image_instruction_to_last_user(final_messages: list[dict], instruction: str):
+    instruction = str(instruction or "").strip()
+    if not instruction:
+        return
+
+    for msg in reversed(final_messages):
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("role") != "user":
+            continue
+
+        content = msg.get("content")
+
+        if isinstance(content, list):
+            content.append({
+                "type": "text",
+                "text": "\n\n" + instruction
+            })
+            return
+
+        if isinstance(content, str):
+            msg["content"] = content.rstrip() + "\n\n" + instruction
+            return
+
 def _normalize_model_entry(item) -> dict | None:
     if isinstance(item, dict):
         mid = str(item.get("id") or "").strip()
@@ -2320,7 +2494,13 @@ def _flatten_messages_for_local(final_messages: list[dict]) -> str:
     return "\n\n".join(parts).strip()
 
 
-def _call_ollama(provider_cfg: dict, actual_model: str, final_messages: list[dict]) -> str:
+def _call_ollama(
+    provider_cfg: dict,
+    actual_model: str,
+    final_messages: list[dict],
+    image_settings: dict | None = None,
+    is_image_model: bool = False
+) -> str:
     base_url = str(provider_cfg.get("base_url") or "").strip() or "http://127.0.0.1:11434"
     url = base_url.rstrip("/") + "/api/generate"
 
@@ -2331,6 +2511,9 @@ def _call_ollama(provider_cfg: dict, actual_model: str, final_messages: list[dic
         "prompt": prompt,
         "stream": False,
     }
+
+    if image_settings and is_image_model:
+        _apply_image_settings_to_payload(payload, image_settings)
 
     system_prompt = str(provider_cfg.get("system_prompt") or "").strip()
     if system_prompt:
@@ -2658,14 +2841,14 @@ def main():
     if force_lang:
         final_messages.append({
             "role": "system",
-            "content": f"Kullanıcı şu dilde cevap vermeni tercih ediyor: {lang_name}"
+            "content": get_ui_text(cfg, "o_System_Force_Language", lang_name=lang_name)
             })
 
 
     if response_style:
         final_messages.append({
             "role": "system",
-            "content": f"Kullanıcı şu konuşma tarzını tercih ediyor: {response_style}"
+            "content": get_ui_text(cfg, "o_System_Response_Style", response_style=response_style)
         })
 
     # ---------------- RECENT MESSAGES MEMORY ----------------
@@ -2749,10 +2932,7 @@ def main():
 
         final_messages.append({
             "role": "system",
-            "content": (
-                "Aşağıdaki mesajlar sadece son kullanıcı mesajını anlaman için referans olarak verilmiştir. "
-                "Bu mesajlara cevap verme. Sadece en son kullanıcı mesajını yanıtla."
-            )
+            "content": get_ui_text(cfg, "o_System_Reference_Messages")
         })
 
         cache_items = []
@@ -2873,6 +3053,17 @@ def main():
     reply = ""
     usage_obj = None
 
+    is_image_model = _is_image_generation_model(model_name)
+    image_settings = _extract_image_settings_from_final_messages(final_messages)
+
+    image_instruction = _build_image_settings_instruction(image_settings, cfg)
+
+    if image_instruction and is_image_model:
+        _append_image_instruction_to_last_user(
+            final_messages,
+            image_instruction
+        )
+
     try:
         if is_local_model:
             provider, actual_model = _split_local_model(model_name)
@@ -2907,7 +3098,13 @@ def main():
                 sys.exit(1)
 
             if provider == "ollama":
-                reply = _call_ollama(provider_cfg, actual_model, final_messages)
+                reply = _call_ollama(
+                    provider_cfg,
+                    actual_model,
+                    final_messages,
+                    image_settings=image_settings,
+                    is_image_model=is_image_model
+                )
                 parsed_reply = json.loads(reply)
                 assistant_text = str(parsed_reply.get("content") or "").strip()
 
@@ -2924,13 +3121,19 @@ def main():
                     final_messages.append({
                         "role": "system",
                         "content": (
-                            "Web search results are below. "
-                            "Answer the user's last question using only these results.\n\n"
+                            get_ui_text(cfg, "o_System_Web_Search_Results")
+                            + "\n\n"
                             + web_results
                         )
                     })
 
-                    reply = _call_ollama(provider_cfg, actual_model, final_messages)
+                    reply = _call_ollama(
+                        provider_cfg,
+                        actual_model,
+                        final_messages,
+                        image_settings=image_settings,
+                        is_image_model=is_image_model
+                    )
 
                 sys.stdout.write(reply)
                 sys.stdout.flush()
@@ -2961,7 +3164,6 @@ def main():
                 _die(get_ui_text(cfg, "o_Unsupported_Local_Provider", provider=provider), 1)
 
         # Remote / OpenRouter
-        is_image_model = _is_image_generation_model(model_name)
 
         if (is_pdf_text_only_request or is_pdf_mixed_request) and is_image_model:
             result_obj = {
@@ -3079,6 +3281,9 @@ def main():
             "stream": should_stream
         }
 
+        if image_settings and is_image_model:
+            _apply_image_settings_to_payload(payload, image_settings)
+
         response = requests.post(
             OPENROUTER_URL,
             headers={
@@ -3178,9 +3383,8 @@ def main():
                 final_messages.append({
                     "role": "system",
                     "content": (
-                        "Web search results are below. "
-                        "Answer the user's last question using only these results. "
-                        "If the results are not enough, say that clearly.\n\n"
+                        get_ui_text(cfg, "o_System_Web_Search_Results_With_Fallback")
+                        + "\n\n"
                         + web_results
                     )
                 })
@@ -3191,6 +3395,9 @@ def main():
                     "max_tokens": 5120,
                     "stream": False
                 }
+
+                if image_settings and is_image_model:
+                    _apply_image_settings_to_payload(payload2, image_settings)
 
                 response2 = requests.post(
                     OPENROUTER_URL,
