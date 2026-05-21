@@ -197,7 +197,12 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
    <br><br>
    🧰 System Utilities
    ```
-   sudo pacman -S --needed glib2 xdg-utils noto-fonts-emoji
+   sudo pacman -S --needed xdg-desktop-portal xdg-desktop-portal-gtk glib2 xdg-utils noto-fonts-emoji
+   ```
+   <br><br>
+   ♿ Accessibility / Screen Reader
+   ```
+   sudo pacman -S --needed orca speech-dispatcher espeak-ng at-spi2-core
    ```
    </details>
 
@@ -313,6 +318,11 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
    🧰 System Utilities
    ```
    sudo apt install -y xdg-utils xdg-desktop-portal xdg-desktop-portal-gtk fonts-noto-color-emoji
+   ```
+   <br><br>
+   ♿ Accessibility / Screen Reader
+   ```
+   sudo apt install -y orca speech-dispatcher espeak-ng at-spi2-core
    ```
    </details>
 
