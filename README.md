@@ -30,6 +30,8 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
 
 ✨ Capture AI combines the flexibility of coding-focused AI tools with everyday AI workflows in a single application.
 
+✨ Includes accessibility support for disabled people inside a single open and customizable AI system.
+
 ✨ Capture AI keeps long conversations fast and responsive by loading chats section-by-section instead of all at once. Chat data is stored locally on the computer rather than being constantly fetched from a remote database.
 
 
