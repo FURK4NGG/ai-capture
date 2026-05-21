@@ -37,6 +37,8 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
 
 [![Demo Video](https://github.com/FURK4NGG/capture-ai/blob/main/{}/capture-ai.png)](https://github.com/FURK4NGG/capture-ai/blob/main/{}/capture-ai.mp4)
 
+[![Demo Image](https://github.com/FURK4NGG/capture-ai/blob/main/{}/capture-ai-cli.png)](https://github.com/FURK4NGG/capture-ai/blob/main/{}/capture-ai-cli.mp4)
+
 
 ## 🚀 Features
 - [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
