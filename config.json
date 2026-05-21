@@ -9,6 +9,11 @@
       "copyable"
   ],
   "response_style": "normal",
+  "use_image_settings": false,
+  "image_resolution": "1920x1080",
+  "image_aspect_ratio": "16:9",
+  "image_quality": "medium",
+  "image_style": "",
   "show_usage": true,
   "show_token_value": true,
   "token_value": "2.0",
