@@ -70,6 +70,13 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
 - [ ] Audio,Video,Gif Editing
 - [ ] Humanize Mode
 
+Recommended online models for common usage types:  
+
+Voice (STT) → openai/gpt-audio-mini  
+Text → openai/gpt-5  
+Image Generation / PDF Generation → x-ai/grok-imagine-image-quality  
+DOCX,XLSX Generation → gpt-5  
+
 ## 📦 Setup
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
 2. `Go to the`[`Tavily`](https://app.tavily.com/home)`and create your own api key`
