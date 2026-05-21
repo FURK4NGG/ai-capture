@@ -335,6 +335,7 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
 
 ## 🎉 Run
 ```
+cd ~/capture-ai/
 bash capture-ai.sh (image,text,cli)  
 ```
 
