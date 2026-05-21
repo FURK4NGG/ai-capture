@@ -331,7 +331,7 @@ Text → openai/gpt-5
 Image, PDF Generation → x-ai/grok-imagine-image-quality  
 DOCX, XLSX Generation → openai/gpt-5  
 
-## Accessibility Support
+## Accessibility Support (Orca)
 
 ```
 bash GTK_A11Y=1 python ~/capture-ai/ui.py
