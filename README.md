@@ -328,8 +328,8 @@ bash capture-ai.sh (image,text,cli)
 
 Voice (STT) → openai/gpt-audio-mini  
 Text → openai/gpt-5  
-Image Generation / PDF Generation → x-ai/grok-imagine-image-quality  
-DOCX,XLSX Generation → openai/gpt-5  
+Image, PDF Generation → x-ai/grok-imagine-image-quality  
+DOCX, XLSX Generation → openai/gpt-5  
 
 
 ## ------------------HYPRLAND.CONF------------------
