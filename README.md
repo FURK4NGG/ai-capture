@@ -72,6 +72,7 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
 - [ ] Compatible with macOS, Windows
 - [ ] Audio,Video,Gif Editing
 - [ ] Humanize Mode
+- [ ] Ask with your voice and get code into your clipboard or directly paste your cursor's position
 
 
 ## 📦 Setup
