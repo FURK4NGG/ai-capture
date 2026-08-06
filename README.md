@@ -6,7 +6,7 @@
 
 ## 👀 capture-ai Overview
 
-[![License](https://git.furk4ngg.me/furk4ngg/capture-ai/src/branch/main/%7B%7D/license_GPL-3.svg)](https://github.com/FURK4NGG/capture-ai/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/FURK4NGG/capture-ai)](https://github.com/FURK4NGG/capture-ai/blob/main/LICENSE)
 
 Capture AI is not just a simple chat application.
 
