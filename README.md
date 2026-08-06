@@ -221,7 +221,7 @@ Unlike traditional chat tools, Capture AI can understand, transform, and generat
 
 
    <details>
-   <summary>Debian/Ubuntu/Raspberry Pi OS</summary>
+   <summary>Debian/Ubuntu/Raspberry Pi OS Packages</summary>
 
       
    ```
